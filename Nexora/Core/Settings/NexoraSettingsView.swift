@@ -137,7 +137,7 @@ struct AboutView: View {
                 VStack(spacing: NexoraSpacing.lg) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 72, weight: .light))
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                     
                     VStack(spacing: NexoraSpacing.xs) {
                         Text("Nexora")

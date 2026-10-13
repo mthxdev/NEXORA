@@ -36,7 +36,7 @@ struct NexoraHomeView: View {
         VStack(spacing: NexoraSpacing.sm) {
             Image(systemName: "sparkles")
                 .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
             
             Text("Bienvenue dans Nexora")
                 .font(NexoraTypography.title1)
@@ -186,11 +186,11 @@ struct AddProgramCard: View {
         VStack(spacing: NexoraSpacing.sm) {
             Image(systemName: "plus.circle.fill")
                 .font(.system(size: 32, weight: .light))
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
             
             Text("Nouveau")
                 .font(NexoraTypography.subheadline.weight(.medium))
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
         }
         .frame(width: 160)
         .padding(NexoraSpacing.md)
@@ -199,7 +199,7 @@ struct AddProgramCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: NexoraRadius.md)
                 .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
         )
     }
 }
