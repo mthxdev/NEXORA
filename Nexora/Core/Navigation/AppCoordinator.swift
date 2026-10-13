@@ -12,7 +12,7 @@ struct AppCoordinator: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeView()
+            NexoraHomeView()
                 .tabItem {
                     Label("Accueil", systemImage: "house.fill")
                 }

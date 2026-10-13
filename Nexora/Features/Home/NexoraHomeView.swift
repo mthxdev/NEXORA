@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct HomeView: View {
+struct NexoraHomeView: View {
     @Query(sort: \CompletedWorkout.date, order: .reverse) private var completedWorkouts: [CompletedWorkout]
     @Query(sort: \Program.createdAt) private var programs: [Program]
     
@@ -248,6 +248,6 @@ struct ModuleCard: View {
 }
 
 #Preview {
-    HomeView()
+    NexoraHomeView()
         .modelContainer(for: [Program.self, CompletedWorkout.self], inMemory: true)
 }
