@@ -24,7 +24,7 @@ struct AppCoordinator: View {
                 }
                 .tag(AppTab.muscuLog)
             
-            LogBookView()
+            LogBookTabView()
                 .tabItem {
                     Label("LogBook", systemImage: "book.fill")
                 }
@@ -48,51 +48,72 @@ struct MuscuLogTabView: View {
     }
 }
 
-struct MuscuLogContentView: View {
-    @State private var selectedTab: MuscuLogTab = .home
-    
-    enum MuscuLogTab: Hashable {
-        case home
-        case history
-        case progression
-        case settings
-    }
-    
+struct LogBookTabView: View {
     var body: some View {
-        TabView(selection: $selectedTab) {
-            HomeView()
-                .tabItem {
-                    Label("Accueil", systemImage: "house.fill")
-                }
-                .tag(MuscuLogTab.home)
-            
-            HistoryView()
-                .tabItem {
-                    Label("Historique", systemImage: "clock.fill")
-                }
-                .tag(MuscuLogTab.history)
-            
-            ProgressionView()
-                .tabItem {
-                    Label("Progression", systemImage: "chart.xyaxis.line")
-                }
-                .tag(MuscuLogTab.progression)
-            
-            MuscuLogSettingsView()
-                .tabItem {
-                    Label("Réglages", systemImage: "gearshape.fill")
-                }
-                .tag(MuscuLogTab.settings)
+        NavigationStack {
+            LogBookView()
         }
-        .navigationTitle("MuscuLog")
-        .navigationBarTitleDisplayMode(.large)
     }
 }
 
-struct MuscuLogSettingsView: View {
+struct MuscuLogContentView: View {
+    @State private var selectedSection: MuscuLogSection = .home
+    
+    enum MuscuLogSection: String, CaseIterable, Identifiable {
+        case home = "Accueil"
+        case history = "Historique"
+        case progression = "Progression"
+        case settings = "Réglages"
+        
+        var id: String { rawValue }
+        
+        var icon: String {
+            switch self {
+            case .home: return "house.fill"
+            case .history: return "clock.fill"
+            case .progression: return "chart.xyaxis.line"
+            case .settings: return "gearshape.fill"
+            }
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Picker("Section", selection: $selectedSection) {
+                ForEach(MuscuLogSection.allCases) { section in
+                    Label(section.rawValue, systemImage: section.icon)
+                        .tag(section)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, NexoraSpacing.md)
+            .padding(.vertical, NexoraSpacing.sm)
+            .background(NexoraColors.groupedBackground)
+            
+            Group {
+                switch selectedSection {
+                case .home:
+                    MuscuLogHomeContent()
+                case .history:
+                    MuscuLogHistoryContent()
+                case .progression:
+                    MuscuLogProgressionContent()
+                case .settings:
+                    MuscuLogSettingsContent()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .navigationTitle("MuscuLog")
+        .navigationBarTitleDisplayMode(.large)
+        .background(NexoraColors.groupedBackground)
+    }
+}
+
+struct MuscuLogSettingsContent: View {
     var body: some View {
         SettingsView()
-            .navigationTitle("Réglages MuscuLog")
+            .navigationTitle("Réglages")
             .navigationBarTitleDisplayMode(.inline)
     }
 }
