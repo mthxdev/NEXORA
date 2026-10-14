@@ -43,17 +43,6 @@ struct LogBookView: View {
         return learnings.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
     
-    private var currentEntries: [any LogBookEntry] {
-        switch selectedCategory {
-        case .movie: return filteredMovies
-        case .series: return filteredSeries
-        case .anime: return filteredAnimes
-        case .game: return filteredGames
-        case .project: return filteredProjects
-        case .learning: return filteredLearnings
-        }
-    }
-    
     private var currentEntriesCount: Int {
         switch selectedCategory {
         case .movie: return filteredMovies.count
@@ -177,98 +166,55 @@ struct LogBookView: View {
     private var listView: some View {
         ScrollView {
             LazyVStack(spacing: NexoraSpacing.sm) {
-                ForEach(currentEntries, id: \.id) { entry in
-                    NavigationLink(destination: detailView(for: entry)) {
-                        LogBookRow(entry: entry)
+                switch selectedCategory {
+                case .movie:
+                    ForEach(filteredMovies) { movie in
+                        NavigationLink(destination: MovieDetailView(movie: movie)) {
+                            LogBookRow(title: movie.title, status: movie.status, dateAdded: movie.dateAdded, isFavorite: movie.isFavorite)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                case .series:
+                    ForEach(filteredSeries) { series in
+                        NavigationLink(destination: SeriesDetailView(series: series)) {
+                            LogBookRow(title: series.title, status: series.status, dateAdded: series.dateAdded, isFavorite: series.isFavorite)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                case .anime:
+                    ForEach(filteredAnimes) { anime in
+                        NavigationLink(destination: AnimeDetailView(anime: anime)) {
+                            LogBookRow(title: anime.title, status: anime.status, dateAdded: anime.dateAdded, isFavorite: anime.isFavorite)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                case .game:
+                    ForEach(filteredGames) { game in
+                        NavigationLink(destination: GameDetailView(game: game)) {
+                            LogBookRow(title: game.title, status: game.status, dateAdded: game.dateAdded, isFavorite: game.isFavorite)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                case .project:
+                    ForEach(filteredProjects) { project in
+                        NavigationLink(destination: ProjectDetailView(project: project)) {
+                            LogBookRow(title: project.name, status: project.status, dateAdded: project.dateCreated, isFavorite: project.isFavorite)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                case .learning:
+                    ForEach(filteredLearnings) { learning in
+                        NavigationLink(destination: LearningDetailView(learning: learning)) {
+                            LogBookRow(title: learning.name, status: learning.status, dateAdded: learning.dateLastUpdated, isFavorite: learning.isFavorite)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
             .padding(.horizontal, NexoraSpacing.md)
             .padding(.vertical, NexoraSpacing.sm)
         }
     }
-    
-    @ViewBuilder
-    private func detailView(for entry: any LogBookEntry) -> some View {
-        switch entry.category {
-        case .movie:
-            if let movie = entry as? MovieEntry {
-                MovieDetailView(movie: movie)
-            }
-        case .series:
-            if let series = entry as? SeriesEntry {
-                SeriesDetailView(series: series)
-            }
-        case .anime:
-            if let anime = entry as? AnimeEntry {
-                AnimeDetailView(anime: anime)
-            }
-        case .game:
-            if let game = entry as? GameEntry {
-                GameDetailView(game: game)
-            }
-        case .project:
-            if let project = entry as? ProjectEntry {
-                ProjectDetailView(project: project)
-            }
-        case .learning:
-            if let learning = entry as? LearningEntry {
-                LearningDetailView(learning: learning)
-            }
-        }
-    }
-}
-
-protocol LogBookEntry: Identifiable {
-    var id: UUID { get }
-    var title: String { get }
-    var status: any RawRepresentable<String> { get }
-    var dateAdded: Date { get }
-    var isFavorite: Bool { get }
-    var category: LogBookCategory { get }
-}
-
-extension MovieEntry: LogBookEntry {
-    var title: String { self.title }
-    var status: any RawRepresentable<String> { self.status }
-    var dateAdded: Date { self.dateAdded }
-    var category: LogBookCategory { .movie }
-}
-
-extension SeriesEntry: LogBookEntry {
-    var title: String { self.title }
-    var status: any RawRepresentable<String> { self.status }
-    var dateAdded: Date { self.dateAdded }
-    var category: LogBookCategory { .series }
-}
-
-extension AnimeEntry: LogBookEntry {
-    var title: String { self.title }
-    var status: any RawRepresentable<String> { self.status }
-    var dateAdded: Date { self.dateAdded }
-    var category: LogBookCategory { .anime }
-}
-
-extension GameEntry: LogBookEntry {
-    var title: String { self.title }
-    var status: any RawRepresentable<String> { self.status }
-    var dateAdded: Date { self.dateAdded }
-    var category: LogBookCategory { .game }
-}
-
-extension ProjectEntry: LogBookEntry {
-    var title: String { self.name }
-    var status: any RawRepresentable<String> { self.status }
-    var dateAdded: Date { self.dateCreated }
-    var category: LogBookCategory { .project }
-}
-
-extension LearningEntry: LogBookEntry {
-    var title: String { self.name }
-    var status: any RawRepresentable<String> { self.status }
-    var dateAdded: Date { self.dateLastUpdated }
-    var category: LogBookCategory { .learning }
 }
 
 struct SearchBar: View {
@@ -342,23 +288,25 @@ struct CategoryTabButton: View {
 }
 
 struct LogBookRow: View {
-    let entry: any LogBookEntry
+    let title: String
+    let status: any RawRepresentable<String>
+    let dateAdded: Date
+    let isFavorite: Bool
     
     var body: some View {
         HStack(spacing: NexoraSpacing.md) {
-            // Status indicator
             Circle()
                 .fill(statusColor)
                 .frame(width: 10, height: 10)
             
             VStack(alignment: .leading, spacing: NexoraSpacing.xs) {
                 HStack {
-                    Text(entry.title)
+                    Text(title)
                         .font(NexoraTypography.body)
                         .foregroundStyle(NexoraColors.label)
                         .lineLimit(1)
                     
-                    if entry.isFavorite {
+                    if isFavorite {
                         Image(systemName: "star.fill")
                             .font(.caption)
                             .foregroundStyle(.yellow)
@@ -370,7 +318,7 @@ struct LogBookRow: View {
                         .font(NexoraTypography.caption)
                         .foregroundStyle(NexoraColors.secondaryLabel)
                     
-                    Text(entry.dateAdded.formatted(date: .abbreviated, time: .omitted))
+                    Text(dateAdded.formatted(date: .abbreviated, time: .omitted))
                         .font(NexoraTypography.caption)
                         .foregroundStyle(NexoraColors.tertiaryLabel)
                 }
@@ -387,45 +335,40 @@ struct LogBookRow: View {
         .clipShape(RoundedRectangle(cornerRadius: NexoraRadius.md))
     }
     
-    private var statusText: String { entry.status.rawValue }
-    private var statusIcon: String { 
-        if let mediaStatus = entry.status as? MediaStatus {
-            return mediaStatus.icon
-        } else if let seriesStatus = entry.status as? SeriesStatus {
-            return seriesStatus.icon
-        } else if let projectStatus = entry.status as? ProjectStatus {
-            return projectStatus.icon
-        } else if let learningStatus = entry.status as? LearningStatus {
-            return learningStatus.icon
-        }
+    private var statusText: String { status.rawValue }
+    private var statusIcon: String {
+        if let s = status as? MediaStatus { return s.icon }
+        if let s = status as? SeriesStatus { return s.icon }
+        if let s = status as? ProjectStatus { return s.icon }
+        if let s = status as? LearningStatus { return s.icon }
         return "circle"
     }
     
     private var statusColor: Color {
-        if let mediaStatus = entry.status as? MediaStatus {
-            switch mediaStatus {
+        if let s = status as? MediaStatus {
+            switch s {
             case .toWatch: return .gray
             case .inProgress: return .blue
             case .completed: return .green
             case .abandoned: return .red
             }
-        } else if let seriesStatus = entry.status as? SeriesStatus {
-            switch seriesStatus {
+        } else if let s = status as? SeriesStatus {
+            switch s {
             case .toStart: return .gray
             case .inProgress: return .blue
             case .completed: return .green
             case .abandoned: return .red
             }
-        } else if let projectStatus = entry.status as? ProjectStatus {
-            switch projectStatus {
+        } else if let s = status as? ProjectStatus {
+            switch s {
             case .planning: return .gray
             case .active: return .blue
             case .onHold: return .orange
             case .completed: return .green
             case .cancelled: return .red
             }
-        } else if let learningStatus = entry.status as? LearningStatus {
-            switch learningStatus {
+        } else if let s = status as? LearningStatus {
+            switch s {
             case .notStarted: return .gray
             case .inProgress: return .blue
             case .completed: return .green

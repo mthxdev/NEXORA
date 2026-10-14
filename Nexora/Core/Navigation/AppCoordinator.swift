@@ -99,7 +99,7 @@ struct MuscuLogContentView: View {
                 case .progression:
                     MuscuLogProgressionContent()
                 case .settings:
-                    MuscuLogSettingsContent()
+                    SettingsView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -107,13 +107,5 @@ struct MuscuLogContentView: View {
         .navigationTitle("MuscuLog")
         .navigationBarTitleDisplayMode(.large)
         .background(NexoraColors.groupedBackground)
-    }
-}
-
-struct MuscuLogSettingsContent: View {
-    var body: some View {
-        SettingsView()
-            .navigationTitle("Réglages")
-            .navigationBarTitleDisplayMode(.inline)
     }
 }

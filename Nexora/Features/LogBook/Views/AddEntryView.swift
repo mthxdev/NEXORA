@@ -9,10 +9,15 @@ struct AddEntryView: View {
     
     @State private var title = ""
     @State private var description = ""
-    @State private var status: Any?
     @State private var rating: Int?
     @State private var comment = ""
     @State private var isFavorite = false
+    
+    // Category-specific status states
+    @State private var mediaStatus: MediaStatus = .toWatch
+    @State private var seriesStatus: SeriesStatus = .toStart
+    @State private var projectStatus: ProjectStatus = .planning
+    @State private var learningStatus: LearningStatus = .notStarted
     
     // Category-specific fields
     @State private var dateWatched: Date?
@@ -28,26 +33,7 @@ struct AddEntryView: View {
     @State private var notes = ""
     @State private var resources = ""
     @State private var dateStarted: Date?
-    
-    private var selectedMediaStatus: MediaStatus {
-        get { (status as? MediaStatus) ?? .toWatch }
-        set { status = newValue }
-    }
-    
-    private var selectedSeriesStatus: SeriesStatus {
-        get { (status as? SeriesStatus) ?? .toStart }
-        set { status = newValue }
-    }
-    
-    private var selectedProjectStatus: ProjectStatus {
-        get { (status as? ProjectStatus) ?? .planning }
-        set { status = newValue }
-    }
-    
-    private var selectedLearningStatus: LearningStatus {
-        get { (status as? LearningStatus) ?? .notStarted }
-        set { status = newValue }
-    }
+    @State private var playtimeHours: Double?
     
     var body: some View {
         NavigationStack {
@@ -108,25 +94,25 @@ struct AddEntryView: View {
         Group {
             switch category {
             case .movie, .game:
-                Picker("Statut", selection: $selectedMediaStatus) {
+                Picker("Statut", selection: $mediaStatus) {
                     ForEach(MediaStatus.allCases) { s in
                         Label(s.rawValue, systemImage: s.icon).tag(s)
                     }
                 }
             case .series, .anime:
-                Picker("Statut", selection: $selectedSeriesStatus) {
+                Picker("Statut", selection: $seriesStatus) {
                     ForEach(SeriesStatus.allCases) { s in
                         Label(s.rawValue, systemImage: s.icon).tag(s)
                     }
                 }
             case .project:
-                Picker("Statut", selection: $selectedProjectStatus) {
+                Picker("Statut", selection: $projectStatus) {
                     ForEach(ProjectStatus.allCases) { s in
                         Label(s.rawValue, systemImage: s.icon).tag(s)
                     }
                 }
             case .learning:
-                Picker("Statut", selection: $selectedLearningStatus) {
+                Picker("Statut", selection: $learningStatus) {
                     ForEach(LearningStatus.allCases) { s in
                         Label(s.rawValue, systemImage: s.icon).tag(s)
                     }
@@ -248,10 +234,10 @@ struct AddEntryView: View {
     
     private func setupInitialStatus() {
         switch category {
-        case .movie, .game: status = MediaStatus.toWatch
-        case .series, .anime: status = SeriesStatus.toStart
-        case .project: status = ProjectStatus.planning
-        case .learning: status = LearningStatus.notStarted
+        case .movie, .game: mediaStatus = .toWatch
+        case .series, .anime: seriesStatus = .toStart
+        case .project: projectStatus = .planning
+        case .learning: learningStatus = .notStarted
         }
     }
     
@@ -264,7 +250,7 @@ struct AddEntryView: View {
             let entry = MovieEntry(
                 title: trimmedTitle,
                 description: description,
-                status: selectedMediaStatus,
+                status: mediaStatus,
                 dateWatched: dateWatched,
                 personalRating: rating,
                 personalComment: comment.isEmpty ? nil : comment,
@@ -277,7 +263,7 @@ struct AddEntryView: View {
             let entry = SeriesEntry(
                 title: trimmedTitle,
                 description: description,
-                status: selectedSeriesStatus,
+                status: seriesStatus,
                 currentSeason: currentSeason,
                 currentEpisode: currentEpisode,
                 totalSeasons: totalSeasons,
@@ -293,7 +279,7 @@ struct AddEntryView: View {
             let entry = AnimeEntry(
                 title: trimmedTitle,
                 description: description,
-                status: selectedSeriesStatus,
+                status: seriesStatus,
                 currentSeason: currentSeason,
                 currentEpisode: currentEpisode,
                 totalSeasons: totalSeasons,
@@ -311,7 +297,7 @@ struct AddEntryView: View {
                 title: trimmedTitle,
                 description: description,
                 platform: platform,
-                status: selectedMediaStatus,
+                status: mediaStatus,
                 dateCompleted: dateWatched,
                 personalRating: rating,
                 personalComment: comment.isEmpty ? nil : comment,
@@ -325,7 +311,7 @@ struct AddEntryView: View {
             let entry = ProjectEntry(
                 name: trimmedTitle,
                 description: description,
-                status: selectedProjectStatus,
+                status: projectStatus,
                 priority: priority,
                 goal: goal.isEmpty ? nil : goal,
                 nextStep: nextStep.isEmpty ? nil : nextStep,
@@ -338,7 +324,7 @@ struct AddEntryView: View {
             let entry = LearningEntry(
                 name: trimmedTitle,
                 description: description,
-                status: selectedLearningStatus,
+                status: learningStatus,
                 dateStarted: dateStarted,
                 goal: goal,
                 notes: notes,

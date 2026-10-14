@@ -1,7 +1,8 @@
 import Foundation
 import SwiftData
 
-enum LogBookCategory: String, CaseIterable, Codable {
+enum LogBookCategory: String, CaseIterable, Codable, Identifiable {
+    var id: String { rawValue }
     case movie = "Films"
     case series = "Séries"
     case anime = "Animés"
@@ -32,7 +33,8 @@ enum LogBookCategory: String, CaseIterable, Codable {
     }
 }
 
-enum MediaStatus: String, CaseIterable, Codable {
+enum MediaStatus: String, CaseIterable, Codable, Identifiable {
+    var id: String { rawValue }
     case toWatch = "À voir"
     case inProgress = "En cours"
     case completed = "Vu"
@@ -48,7 +50,8 @@ enum MediaStatus: String, CaseIterable, Codable {
     }
 }
 
-enum SeriesStatus: String, CaseIterable, Codable {
+enum SeriesStatus: String, CaseIterable, Codable, Identifiable {
+    var id: String { rawValue }
     case toStart = "À commencer"
     case inProgress = "En cours"
     case completed = "Terminée"
@@ -64,7 +67,8 @@ enum SeriesStatus: String, CaseIterable, Codable {
     }
 }
 
-enum ProjectStatus: String, CaseIterable, Codable {
+enum ProjectStatus: String, CaseIterable, Codable, Identifiable {
+    var id: String { rawValue }
     case planning = "Planification"
     case active = "Actif"
     case onHold = "En pause"
@@ -82,7 +86,8 @@ enum ProjectStatus: String, CaseIterable, Codable {
     }
 }
 
-enum LearningStatus: String, CaseIterable, Codable {
+enum LearningStatus: String, CaseIterable, Codable, Identifiable {
+    var id: String { rawValue }
     case notStarted = "Non commencé"
     case inProgress = "En cours"
     case completed = "Terminé"
@@ -98,7 +103,8 @@ enum LearningStatus: String, CaseIterable, Codable {
     }
 }
 
-enum Priority: String, CaseIterable, Codable {
+enum Priority: String, CaseIterable, Codable, Identifiable {
+    var id: String { rawValue }
     case low = "Basse"
     case medium = "Moyenne"
     case high = "Haute"
