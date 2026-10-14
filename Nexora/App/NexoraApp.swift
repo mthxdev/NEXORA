@@ -21,8 +21,11 @@ struct NexoraApp: App {
             ProjectEntry.self,
             LearningEntry.self
         ]) { result in
-            if case .success(let container) = result {
+            switch result {
+            case .success(let container):
                 InitialDataLoader.loadIfEmpty(context: container.mainContext)
+            case .failure(let error):
+                print("NexoraApp: ModelContainer creation failed: \(error)")
             }
         }
     }
