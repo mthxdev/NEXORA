@@ -246,7 +246,6 @@ final class ProjectEntry {
         self.priority = priority
         self.dateCreated = Date()
         self.dateModified = Date()
-        self.dateCompleted = dateCompleted
         self.goal = goal
         self.nextStep = nextStep
         self.notes = notes
