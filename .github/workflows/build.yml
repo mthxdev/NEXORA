@@ -30,7 +30,9 @@ jobs:
           sed -i '' -E 's/objectVersion = [0-9]+;/objectVersion = 56;/g' Nexora.xcodeproj/project.pbxproj
 
       - name: Build app
+        id: build
         run: |
+          set -o pipefail
           xcodebuild build \
             -project Nexora.xcodeproj \
             -scheme Nexora \
@@ -41,7 +43,13 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ONLY_ACTIVE_ARCH=NO \
-            -derivedDataPath build
+            -derivedDataPath build 2>&1 | tee build.log
+          echo "BUILD_STATUS=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      - name: Show build errors
+        if: failure()
+        run: |
+          grep -E '(?:^|[:\s])error:' build.log || grep -E ':\d+:\d+: error:' build.log | head -50
 
       - name: Package IPA
         run: |
