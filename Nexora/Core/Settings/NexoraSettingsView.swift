@@ -160,6 +160,7 @@ struct AboutView: View {
                     VStack(alignment: .leading, spacing: NexoraSpacing.md) {
                         ModuleInfoRow(icon: "dumbbell.fill", color: .blue, title: "MuscuLog", description: "Suivi musculation complet avec programmes, séances et progression")
                         ModuleInfoRow(icon: "book.fill", color: .purple, title: "LogBook", description: "Films, séries, animés, jeux, projets, apprentissages (à venir)")
+                    ModuleInfoRow(icon: "carrot.fill", color: .orange, title: "Repas", description: "Recettes culinaires avec planification, nutrition estimée et favoris")
                     }
                     .padding(.horizontal, NexoraSpacing.xl)
                     

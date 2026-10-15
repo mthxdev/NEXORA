@@ -4,6 +4,7 @@ enum AppTab: Hashable {
     case home
     case muscuLog
     case logBook
+    case repas
     case settings
 }
 
@@ -29,7 +30,13 @@ struct AppCoordinator: View {
                     Label("LogBook", systemImage: "book.fill")
                 }
                 .tag(AppTab.logBook)
-            
+
+            MealTabView()
+                .tabItem {
+                    Label("Repas", systemImage: "carrot.fill")
+                }
+                .tag(AppTab.repas)
+
             NexoraSettingsView()
                 .tabItem {
                     Label("Réglages", systemImage: "gearshape.fill")

@@ -123,13 +123,24 @@ struct NexoraHomeView: View {
                 }
                 .buttonStyle(.plain)
                 
-                NavigationLink(destination: LogBookView()) {
+                 NavigationLink(destination: LogBookView()) {
                     ModuleCard(
                         icon: "book.fill",
                         title: "LogBook",
                         subtitle: "Films, séries, jeux, projets…",
                         color: .purple,
                         stats: "Bientôt disponible"
+                    )
+                }
+                .buttonStyle(.plain)
+
+                NavigationLink(destination: MealTabView()) {
+                    ModuleCard(
+                        icon: "carrot.fill",
+                        title: "Repas",
+                        subtitle: "Recettes, planification & favoris",
+                        color: .orange,
+                        stats: "\(SampleRecipes.all.count) recettes"
                     )
                 }
                 .buttonStyle(.plain)
@@ -249,5 +260,5 @@ struct ModuleCard: View {
 
 #Preview {
     NexoraHomeView()
-        .modelContainer(for: [Program.self, CompletedWorkout.self], inMemory: true)
+        .modelContainer(for: [Program.self, CompletedWorkout.self, FavoriteRecipe.self], inMemory: true)
 }
