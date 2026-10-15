@@ -3,7 +3,11 @@ import SwiftUI
 struct RecipeCatalogView: View {
     @ObservedObject private var mealService = MealService.shared
     @State private var searchText = ""
-    let selectedCategory: MealCategory? = nil
+    let selectedCategory: MealCategory?
+
+    init(selectedCategory: MealCategory? = nil) {
+        self.selectedCategory = selectedCategory
+    }
 
     var filteredRecipes: [Recipe] {
         mealService.recipes
