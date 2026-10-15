@@ -110,7 +110,6 @@ struct NutritionDatabase {
         "Vin blanc": IngredientNutrition(caloriesPer100g: 82, proteinPer100g: 0),
         "Vin rouge": IngredientNutrition(caloriesPer100g: 82, proteinPer100g: 0),
         "Boulettes de bœuf": IngredientNutrition(caloriesPer100g: 280, proteinPer100g: 18),
-        "Fromage (brie)": IngredientNutrition(caloriesPer100g: 250, proteinPer100g: 15),
         "Pesto": IngredientNutrition(caloriesPer100g: 550, proteinPer100g: 5),
         "Pâtes cuites (pâtes)": IngredientNutrition(caloriesPer100g: 131, proteinPer100g: 5.1),
         "Fromage (fromage blanc)": IngredientNutrition(caloriesPer100g: 61, proteinPer100g: 11),
