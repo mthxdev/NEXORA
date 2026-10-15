@@ -113,7 +113,7 @@ struct MuscuLogHomeContent: View {
         }
         .navigationDestination(isPresented: Binding(
             get: { workoutToStart != nil },
-            set: { _, _ in workoutToStart = nil }
+            set: { _ in workoutToStart = nil }
         )) {
             if let template = workoutToStart {
                 ActiveWorkoutView(workoutTemplate: template)
