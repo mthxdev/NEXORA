@@ -1,8 +1,8 @@
 import Foundation
 
 struct IngredientNutrition {
-    let caloriesPer100g: Int
-    let proteinPer100g: Int
+    let caloriesPer100g: Double
+    let proteinPer100g: Double
 }
 
 struct NutritionDatabase {
@@ -158,8 +158,8 @@ struct NutritionDatabase {
 
         let factor = quantityInGrams / 100.0
         return (
-            calories: Int(factor * Double(nutrition.caloriesPer100g)),
-            protein: Int(factor * Double(nutrition.proteinPer100g))
+            calories: Int(factor * nutrition.caloriesPer100g),
+            protein: Int(factor * nutrition.proteinPer100g)
         )
     }
 
