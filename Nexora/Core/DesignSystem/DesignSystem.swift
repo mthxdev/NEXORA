@@ -10,6 +10,9 @@ struct NexoraColors {
     static let label = Color(.label)
     static let secondaryLabel = Color(.secondaryLabel)
     static let tertiaryLabel = Color(.tertiaryLabel)
+    static let blue = Color.blue
+    static let orange = Color.orange
+    static let purple = Color.purple
 }
 
 struct NexoraSpacing {
