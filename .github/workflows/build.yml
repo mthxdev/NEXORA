@@ -31,7 +31,6 @@ jobs:
 
       - name: Build app
         run: |
-          set +e
           xcodebuild build \
             -project Nexora.xcodeproj \
             -scheme Nexora \
@@ -42,27 +41,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ONLY_ACTIVE_ARCH=NO \
-            -derivedDataPath build 2>&1 | tee build.log
-          BUILD_EXIT_CODE=${PIPESTATUS[0]}
-          set -e
-          if [ $BUILD_EXIT_CODE -ne 0 ]; then
-            echo "BUILD FAILED with exit code $BUILD_EXIT_CODE"
-            grep -E 'error:' build.log | while IFS= read -r line; do
-              echo "::error::$line"
-            done
-            grep -E 'warning:' build.log | head -5 | while IFS= read -r line; do
-              echo "::warning::$line"
-            done
-            exit 1
-          fi
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-          retention-days: 90
+            -derivedDataPath build
 
       - name: Package IPA
         run: |

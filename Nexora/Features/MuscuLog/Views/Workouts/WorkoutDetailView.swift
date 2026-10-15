@@ -38,8 +38,8 @@ struct WorkoutDetailView: View {
                         .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
-                    .swipeActions(edge: .trailing, style: .destructive) {
-                        Button("Supprimer", systemImage: "trash") {
+                    .swipeActions(edge: .trailing) {
+                        Button("Supprimer", systemImage: "trash", role: .destructive) {
                             deleteExercise(exercise)
                         }
                     }
