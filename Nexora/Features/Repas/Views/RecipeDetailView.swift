@@ -142,7 +142,6 @@ struct RecipeDetailView: View {
             }
             .padding()
         }
-        .scrollDismissBehaviors(.immediately)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

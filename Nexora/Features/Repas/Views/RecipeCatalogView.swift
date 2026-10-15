@@ -3,7 +3,7 @@ import SwiftUI
 struct RecipeCatalogView: View {
     @ObservedObject private var mealService = MealService.shared
     @State private var searchText = ""
-    let selectedCategory: MealCategory?
+    let selectedCategory: MealCategory? = nil
 
     var filteredRecipes: [Recipe] {
         mealService.recipes
@@ -30,7 +30,7 @@ struct RecipeCatalogView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(titleText)
         .navigationBarTitleDisplayMode(.large)
-        .searchable(text: $searchText, placement: .navigationBar)
+        .searchable(text: $searchText)
     }
 
     private var titleText: String {
