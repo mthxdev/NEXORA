@@ -31,6 +31,7 @@ jobs:
 
       - name: Build app
         run: |
+          set -o pipefail
           xcodebuild build \
             -project Nexora.xcodeproj \
             -scheme Nexora \
@@ -41,7 +42,16 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ONLY_ACTIVE_ARCH=NO \
-            -derivedDataPath build
+            -derivedDataPath build 2>&1 | tee build.log
+          echo "BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 90
 
       - name: Package IPA
         run: |
