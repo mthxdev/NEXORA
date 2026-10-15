@@ -69,7 +69,7 @@ struct WorkoutDetailView: View {
                         Label("Ajouter un exercice", systemImage: "plus")
                     }
                     Button {
-                        editingExercise = sortedWorkouts.first
+                        editingExercise = sortedExercises.first
                     } label: {
                         Label("Modifier un exercice", systemImage: "pencil")
                     }
