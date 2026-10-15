@@ -489,7 +489,7 @@ struct SampleRecipes {
                 systemImage: "star.fill"
             ),
             Recipe(
-                id: UUID(uuidString: "efgh5678-efgh-5678-efgh-567890123456")!,
+                id: UUID(uuidString: "ef015678-ef01-5678-ef01-567890123456")!,
                 name: "Lasagnes",
                 description: "Des lasagnes aux couches de pâtes, bolognaise et béchamel. Un plat de fête qu'il vaut la peine de préparer le week-end.",
                 category: .weekend,
@@ -524,7 +524,7 @@ struct SampleRecipes {
                 systemImage: "star.fill"
             ),
             Recipe(
-                id: UUID(uuidString: "ijkl9012-ijkl-9012-ijkl-901234567890")!,
+                id: UUID(uuidString: "ab129012-ab12-9012-ab12-901234567890")!,
                 name: "Tacos maison",
                 description: "Des tacos avec des tortillas de maïs, de la viande épicée et des accompagnements frais. Un repas festif et coloré.",
                 category: .weekend,
@@ -556,7 +556,7 @@ struct SampleRecipes {
                 systemImage: "star.fill"
             ),
             Recipe(
-                id: UUID(uuidString: "mnop3456-mnop-3456-mnop-345678901234")!,
+                id: UUID(uuidString: "cd343456-cd34-3456-cd34-345678901234")!,
                 name: "Riz au fromage",
                 description: "Un riz crémeux au fromage, simple et réconfortant. Parfait pour un repas familial.",
                 category: .weekend,
@@ -581,7 +581,7 @@ struct SampleRecipes {
                 systemImage: "star.fill"
             ),
             Recipe(
-                id: UUID(uuidString: "qrst7890-qrst-7890-qrst-789012345678")!,
+                id: UUID(uuidString: "ef567890-ef56-7890-ef56-789012345678")!,
                 name: "Poulet à la moutarde",
                 description: "Des filets de poulet nappés d'une sauce à la moutarde. Rapide et plein de saveur.",
                 category: .express,
