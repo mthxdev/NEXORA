@@ -49,17 +49,12 @@ jobs:
       - name: Show build errors
         if: failure()
         run: |
-          echo "=== ERROR LINES ==="
-          grep -iE 'error:' build.log | head -50 || true
-          echo "=== LAST 100 LINES ==="
-          tail -100 build.log
-          echo "=== ANNOTATING ==="
-          grep -oP '^[^:]+:\d+:\d+: error:.*' build.log | while IFS= read -r line; do
-            filepath=$(echo "$line" | cut -d: -f1)
-            lineno=$(echo "$line" | cut -d: -f2)
-            colno=$(echo "$line" | cut -d: -f3)
-            msg=$(echo "$line" | cut -d: -f4- | sed 's/^ //')
-            echo "::error file=$filepath,line=$lineno,col=$colno::$msg"
+          echo "=== FULL BUILD LOG ==="
+          cat build.log
+          echo ""
+          echo "=== ANNOTATING ERRORS ==="
+          grep -iE 'error:' build.log | head -100 | while IFS= read -r line; do
+            echo "::error::$line"
           done || true
 
       - name: Package IPA
