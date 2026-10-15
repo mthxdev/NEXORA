@@ -31,7 +31,7 @@ jobs:
 
       - name: Build app
         run: |
-          set -o pipefail
+          set +e
           xcodebuild build \
             -project Nexora.xcodeproj \
             -scheme Nexora \
@@ -42,8 +42,14 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ONLY_ACTIVE_ARCH=NO \
-            -derivedDataPath build 2>&1 | tee build.log
-          echo "BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
+            -derivedDataPath build > build.log 2>&1
+          BUILD_EXIT_CODE=$?
+          set -e
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "BUILD FAILED with exit code $BUILD_EXIT_CODE"
+            grep -E 'error:' build.log || true
+            exit 1
+          fi
 
       - name: Upload build log
         if: always()
