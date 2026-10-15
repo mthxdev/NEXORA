@@ -23,12 +23,6 @@ struct FavoritesView: View {
                             RecipeRow(recipe: recipe)
                         }
                     }
-                    .onDelete { indexSet in
-                        for index in indexSet {
-                            let favorite = favorites[index]
-                            // Delete handled via context
-                        }
-                    }
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 }
                 .listStyle(.insetGrouped)

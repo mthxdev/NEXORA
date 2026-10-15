@@ -101,7 +101,8 @@ struct RecipeDetailView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(NexoraColors.label)
 
-                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
+                    ForEach(recipe.steps.indices, id: \.self) { index in
+                        let step = recipe.steps[index]
                         HStack(alignment: .top, spacing: NexoraSpacing.sm) {
                             Text("\(index + 1)")
                                 .font(NexoraTypography.caption2)
