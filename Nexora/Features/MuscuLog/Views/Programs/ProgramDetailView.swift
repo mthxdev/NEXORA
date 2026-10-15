@@ -6,6 +6,8 @@ struct ProgramDetailView: View {
     @Bindable var program: Program
 
     @State private var showingEditProgram = false
+    @State private var showingActiveWorkout = false
+    @State private var startWorkoutTemplate: WorkoutTemplate?
 
     var sortedWorkouts: [WorkoutTemplate] {
         program.workouts.sorted { $0.displayOrder < $1.displayOrder }
@@ -57,6 +59,26 @@ struct ProgramDetailView: View {
         }
         .sheet(isPresented: $showingEditProgram) {
             ProgramFormView(program: program)
+        }
+        .safeAreaInset(edge: .bottom) {
+            if let firstWorkout = sortedWorkouts.first {
+                Button {
+                    startWorkoutTemplate = firstWorkout
+                } label: {
+                    Text("Démarrer la séance")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.accentColor)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                }
+                .padding()
+                .background(.ultraThinMaterial)
+            }
+        }
+        .fullScreenCover(item: $startWorkoutTemplate) { template in
+            ActiveWorkoutView(workoutTemplate: template)
         }
     }
 

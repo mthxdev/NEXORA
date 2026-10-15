@@ -8,6 +8,7 @@ struct MuscuLogHomeContent: View {
 
     @State private var showingAddProgram = false
     @State private var showingResumeWorkout = false
+    @State private var workoutToStart: WorkoutTemplate?
 
     private var unfinishedWorkout: CompletedWorkout? {
         completedWorkouts.first(where: { $0.finishedAt == nil })
@@ -54,15 +55,34 @@ struct MuscuLogHomeContent: View {
                     )
                 } else {
                     ForEach(programs) { program in
-                        NavigationLink(destination: ProgramDetailView(program: program)) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(program.name)
-                                    .font(.headline)
-                                Text("\(program.workouts.count) séance\(program.workouts.count > 1 ? "s" : "")")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 6) {
+                            NavigationLink(destination: ProgramDetailView(program: program)) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(program.name)
+                                        .font(.headline)
+                                    Text("\(program.workouts.count) séance\(program.workouts.count > 1 ? "s" : "")")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 4)
                             }
-                            .padding(.vertical, 4)
+                            .buttonStyle(.plain)
+
+                            if !program.workouts.isEmpty {
+                                Button {
+                                    startSession(for: program)
+                                } label: {
+                                    Label("Démarrer la séance", systemImage: "play.fill")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 8)
+                                        .background(Color.accentColor)
+                                        .foregroundStyle(.white)
+                                        .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                     }
                     .onDelete(perform: deletePrograms)
@@ -91,6 +111,19 @@ struct MuscuLogHomeContent: View {
                 )
             }
         }
+        .navigationDestination(isPresented: Binding(
+            get: { workoutToStart != nil },
+            set: { _, _ in workoutToStart = nil }
+        )) {
+            if let template = workoutToStart {
+                ActiveWorkoutView(workoutTemplate: template)
+            }
+        }
+    }
+
+    private func startSession(for program: Program) {
+        guard let firstWorkout = program.workouts.sorted(by: { $0.displayOrder < $1.displayOrder }).first else { return }
+        workoutToStart = firstWorkout
     }
 
     private func matchingTemplate(for workout: CompletedWorkout) -> WorkoutTemplate {

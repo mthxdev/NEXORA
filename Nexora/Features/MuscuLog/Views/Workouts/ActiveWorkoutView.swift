@@ -11,6 +11,10 @@ struct ActiveWorkoutView: View {
 
     @State private var completedWorkout: CompletedWorkout?
     @State private var showingCancelAlert = false
+    @State private var showingAddExercise = false
+    @State private var newExerciseName = ""
+    @State private var newExerciseTargetSets = 3
+    @State private var insertAfterExercise: CompletedExercise?
 
     init(workoutTemplate: WorkoutTemplate, existingWorkout: CompletedWorkout? = nil) {
         self.workoutTemplate = workoutTemplate
@@ -31,6 +35,12 @@ struct ActiveWorkoutView: View {
                                     addSet(to: exercise)
                                 } label: {
                                     Label("Ajouter une série", systemImage: "plus")
+                                }
+                                Button {
+                                    insertAfterExercise = exercise
+                                    showingAddExercise = true
+                                } label: {
+                                    Label("Ajouter un exercice", systemImage: "plus.square")
                                 }
                             } header: {
                                 Text(exercise.exerciseName)
@@ -58,6 +68,18 @@ struct ActiveWorkoutView: View {
                     }
                     .bold()
                 }
+            }
+            .alert("Nouvel exercice", isPresented: $showingAddExercise) {
+                TextField("Nom de l'exercice", text: $newExerciseName)
+                Button("Annuler", role: .cancel) {
+                    newExerciseName = ""
+                }
+                Button("Ajouter") {
+                    addExerciseAfterCurrent()
+                    newExerciseName = ""
+                }
+            } message: {
+                Text("Entrez le nom du nouvel exercice. Il sera inséré après l'exercice courant.")
             }
             .alert("Annuler la séance ?", isPresented: $showingCancelAlert) {
                 Button("Continuer l'entraînement", role: .cancel) { }
@@ -140,6 +162,35 @@ struct ActiveWorkoutView: View {
     }
 
     @MainActor
+    private func addExerciseAfterCurrent() {
+        guard let workout = completedWorkout,
+              let afterExercise = insertAfterExercise,
+              !newExerciseName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+
+        let sortedExercises = workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })
+        let newDisplayOrder = afterExercise.displayOrder + 1
+
+        let newExercise = CompletedExercise(
+            exerciseName: newExerciseName.trimmingCharacters(in: .whitespaces),
+            displayOrder: newDisplayOrder
+        )
+        newExercise.workout = workout
+        modelContext.insert(newExercise)
+
+        for exercise in sortedExercises where exercise.displayOrder >= newDisplayOrder && exercise.id != afterExercise.id {
+            exercise.displayOrder += 1
+        }
+
+        for i in 1...newExerciseTargetSets {
+            let newSet = CompletedSet(weight: 0, reps: 0, setNumber: i)
+            newSet.exercise = newExercise
+            modelContext.insert(newSet)
+        }
+
+        saveContext()
+    }
+
+    @MainActor
     private func saveContext() {
         do {
             try modelContext.save()
@@ -153,7 +204,6 @@ struct ActiveWorkoutView: View {
         completedWorkout?.finishedAt = Date()
         saveContext()
         
-        // Vibration de succès native Apple
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
         
