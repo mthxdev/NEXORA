@@ -149,7 +149,7 @@ struct NutritionDatabase {
             quantityInGrams = quantity
         } else if unit == "l" {
             quantityInGrams = quantity * 1000
-        } else if unit == "pcs" || unit == "pc" || unit == "unité" || unit == "unités" {
+        } else if unit == "pcs" || unit == "pc" || unit == "unité" || unit == "unités" || unit == "gousses" || unit == "gousse" {
             quantityInGrams = estimateGrams(for: ingredient, count: quantity)
         } else {
             quantityInGrams = 0

@@ -80,7 +80,7 @@ struct Recipe: Identifiable, Hashable {
     }
 
     func estimatedNutrition(for servings: Int) -> (calories: Int, protein: Int) {
-        guard servings > 0 else { return (0, 0) }
+        guard self.servings > 0 else { return (0, 0) }
         let db = NutritionDatabase.shared
         let totalCalories = ingredients.reduce(0) { result, ingredient in
             result + db.caloriesAndProtein(for: ingredient.name, quantity: ingredient.quantity, unit: ingredient.unit).calories
@@ -88,7 +88,7 @@ struct Recipe: Identifiable, Hashable {
         let totalProtein = ingredients.reduce(0) { result, ingredient in
             result + db.caloriesAndProtein(for: ingredient.name, quantity: ingredient.quantity, unit: ingredient.unit).protein
         }
-        return (totalCalories / servings, totalProtein / servings)
+        return (totalCalories / self.servings, totalProtein / self.servings)
     }
 }
 
