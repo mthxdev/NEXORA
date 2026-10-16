@@ -8,6 +8,13 @@ struct BackupData: Codable {
     let programs: [BackupProgram]
     let workouts: [BackupWorkout]
 
+    init(version: Int, exportDate: Date, programs: [BackupProgram] = [], workouts: [BackupWorkout]) {
+        self.version = version
+        self.exportDate = exportDate
+        self.programs = programs
+        self.workouts = workouts
+    }
+
     enum CodingKeys: String, CodingKey {
         case version, exportDate, programs, workouts
     }
