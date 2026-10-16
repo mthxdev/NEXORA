@@ -65,6 +65,32 @@ final class MealService: ObservableObject {
         return pool.randomElement()
     }
 
+    func suggestedRecipes(for date: Date = Date()) -> [Recipe] {
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: date)
+        let isWeekend = weekday == 1 || weekday == 7
+
+        let pool: [Recipe]
+        if isWeekend {
+            pool = recipes.filter { $0.category == .weekend }
+        } else {
+            pool = recipes.filter { $0.category == .express || $0.category == .gourmand }
+        }
+
+        return pool.isEmpty ? recipes : pool
+    }
+
+    func suggestRecipe(for date: Date = Date(), excluding excludedID: UUID? = nil) -> Recipe? {
+        let candidates = suggestedRecipes(for: date)
+        if let excludedID {
+            let filtered = candidates.filter { $0.id != excludedID }
+            if !filtered.isEmpty {
+                return filtered.randomElement()
+            }
+        }
+        return candidates.randomElement()
+    }
+
     func favoriteRecipes() -> [Recipe] {
         favorites.compactMap { recipe(for: $0.recipeID) }
     }
