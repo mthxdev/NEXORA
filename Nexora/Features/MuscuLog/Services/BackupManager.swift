@@ -5,7 +5,42 @@ import SwiftData
 struct BackupData: Codable {
     let version: Int
     let exportDate: Date
+    let programs: [BackupProgram]
     let workouts: [BackupWorkout]
+
+    enum CodingKeys: String, CodingKey {
+        case version, exportDate, programs, workouts
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        exportDate = try container.decode(Date.self, forKey: .exportDate)
+        programs = try container.decodeIfPresent([BackupProgram].self, forKey: .programs) ?? []
+        workouts = try container.decode([BackupWorkout].self, forKey: .workouts)
+    }
+}
+
+struct BackupProgram: Codable {
+    let id: UUID
+    let name: String
+    let createdAt: Date
+    let workouts: [BackupWorkoutTemplate]
+}
+
+struct BackupWorkoutTemplate: Codable {
+    let id: UUID
+    let name: String
+    let displayOrder: Int
+    let exercises: [BackupExerciseTemplate]
+}
+
+struct BackupExerciseTemplate: Codable {
+    let id: UUID
+    let name: String
+    let targetSets: Int
+    let targetReps: String
+    let displayOrder: Int
 }
 
 struct BackupWorkout: Codable {
@@ -33,12 +68,39 @@ struct BackupSet: Codable {
 class BackupManager {
     static let shared = BackupManager()
 
-    /// Exporte toutes les séances complétées dans le dossier Fichiers de l'iPhone
+    /// Exporte toutes les séances complétées et les programmes dans le dossier Fichiers de l'iPhone
     func autoBackup(context: ModelContext) {
-        let descriptor = FetchDescriptor<CompletedWorkout>(sortBy: [SortDescriptor(\.date, order: .reverse)])
-        guard let workouts = try? context.fetch(descriptor) else { return }
+        let programDescriptor = FetchDescriptor<Program>(sortBy: [SortDescriptor(\.createdAt, order: .forward)])
+        let workoutDescriptor = FetchDescriptor<CompletedWorkout>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        
+        guard let programs = try? context.fetch(programDescriptor) else { return }
+        guard let workouts = try? context.fetch(workoutDescriptor) else { return }
 
         // Conversion en structures de sauvegarde
+        let backupPrograms = programs.map { p in
+            BackupProgram(
+                id: p.id,
+                name: p.name,
+                createdAt: p.createdAt,
+                workouts: p.workouts.sorted(by: { $0.displayOrder < $1.displayOrder }).map { w in
+                    BackupWorkoutTemplate(
+                        id: w.id,
+                        name: w.name,
+                        displayOrder: w.displayOrder,
+                        exercises: w.exercises.sorted(by: { $0.displayOrder < $1.displayOrder }).map { e in
+                            BackupExerciseTemplate(
+                                id: e.id,
+                                name: e.name,
+                                targetSets: e.targetSets,
+                                targetReps: e.targetReps,
+                                displayOrder: e.displayOrder
+                            )
+                        }
+                    )
+                }
+            )
+        }
+
         let backupWorkouts = workouts.map { w in
             BackupWorkout(
                 date: w.date,
@@ -58,7 +120,7 @@ class BackupManager {
             )
         }
 
-        let data = BackupData(version: 1, exportDate: Date(), workouts: backupWorkouts)
+        let data = BackupData(version: 2, exportDate: Date(), programs: backupPrograms, workouts: backupWorkouts)
         
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -78,6 +140,9 @@ class BackupManager {
         try? context.delete(model: CompletedWorkout.self)
         try? context.delete(model: CompletedExercise.self)
         try? context.delete(model: CompletedSet.self)
+        try? context.delete(model: Program.self)
+        try? context.delete(model: WorkoutTemplate.self)
+        try? context.delete(model: ExerciseTemplate.self)
         try? context.save()
     }
 
@@ -93,6 +158,33 @@ class BackupManager {
 
         // Effacer l'ancien historique DÉFINITIVEMENT pour éviter les doublons
         deleteAllData(context: context)
+
+        // Réinsérer tous les programmes (templates)
+        for bp in backup.programs {
+            let program = Program(name: bp.name)
+            program.id = bp.id
+            program.createdAt = bp.createdAt
+            context.insert(program)
+
+            for bw in bp.workouts {
+                let workout = WorkoutTemplate(name: bw.name, displayOrder: bw.displayOrder)
+                workout.id = bw.id
+                workout.program = program
+                context.insert(workout)
+
+                for be in bw.exercises {
+                    let exercise = ExerciseTemplate(
+                        name: be.name,
+                        targetSets: be.targetSets,
+                        targetReps: be.targetReps,
+                        displayOrder: be.displayOrder
+                    )
+                    exercise.id = be.id
+                    exercise.workout = workout
+                    context.insert(exercise)
+                }
+            }
+        }
 
         // Réinsérer toutes les séances
         for bw in backup.workouts {

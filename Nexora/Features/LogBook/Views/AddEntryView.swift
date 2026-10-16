@@ -34,6 +34,7 @@ struct AddEntryView: View {
     @State private var resources = ""
     @State private var dateStarted: Date?
     @State private var playtimeHours: Double?
+    @State private var isAnimeMovie = false
     
     var body: some View {
         NavigationStack {
@@ -168,10 +169,7 @@ struct AddEntryView: View {
                         set: { releaseYear = $0 > 0 ? $0 : nil }
                     ), in: 1960...Calendar.current.component(.year, from: Date()))
                     
-                    Toggle("C'est un film", isOn: Binding(
-                        get: { false },
-                        set: { _ in }
-                    ))
+                    Toggle("C'est un film", isOn: $isAnimeMovie)
                 }
             }
             
@@ -239,6 +237,7 @@ struct AddEntryView: View {
         case .project: projectStatus = .planning
         case .learning: learningStatus = .notStarted
         }
+        isAnimeMovie = false
     }
     
     private func save() {
@@ -286,9 +285,9 @@ struct AddEntryView: View {
                 totalEpisodes: totalEpisodes,
                 personalRating: rating,
                 personalComment: comment.isEmpty ? nil : comment,
-                isFavorite: isFavorite,
-                firstAirYear: releaseYear,
-                isMovie: false
+                 isFavorite: isFavorite,
+                 firstAirYear: releaseYear,
+                 isMovie: isAnimeMovie
             )
             modelContext.insert(entry)
             

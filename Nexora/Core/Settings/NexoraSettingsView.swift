@@ -73,7 +73,7 @@ struct NexoraSettingsView: View {
     
     private var dataSection: some View {
         Section {
-            NavigationLink(destination: Text("Sauvegardes - À venir")) {
+            NavigationLink(destination: MuscuLogSettingsContent()) {
                 Label("Sauvegarde & restauration", systemImage: "externaldrive.badge.icloud")
             }
             
@@ -88,7 +88,7 @@ struct NexoraSettingsView: View {
         } header: {
             Text("Données")
         } footer: {
-            Text("Chaque module gère ses propres données. Les options de sauvegarde seront disponibles par module.")
+            Text("Chaque module gère ses propres données. Les options de sauvegarde sont disponibles par module.")
         }
     }
     
