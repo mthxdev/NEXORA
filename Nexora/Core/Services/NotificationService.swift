@@ -2,7 +2,7 @@ import Foundation
 import UserNotifications
 
 @MainActor
-final class NotificationService: ObservableObject {
+final class NotificationService: NSObject, ObservableObject {
     static let shared = NotificationService()
 
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = false
@@ -86,6 +86,7 @@ final class NotificationService: ObservableObject {
 
         let request = UNCalendarNotificationRequest(
             identifier: "workoutReminder",
+            content: content,
             trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
         )
 
@@ -94,16 +95,15 @@ final class NotificationService: ObservableObject {
 }
 
 extension NotificationService: UNUserNotificationCenterDelegate {
-    func userNotificationCenter(
+    @objc func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresentNotificationWithIdentifier identifier: String?,
-        userInfo: [AnyHashable: Any],
+        willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .sound, .badge])
     }
 
-    func userNotificationCenter(
+    @objc func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
