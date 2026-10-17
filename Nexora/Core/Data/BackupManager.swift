@@ -126,7 +126,7 @@ final class BackupManager {
     }
 
     /// Date de la dernière sauvegarde automatique réussie.
-    var lastAutoBackupDate: Date? {
+    nonisolated var lastAutoBackupDate: Date? {
         UserDefaults.standard.object(forKey: "lastAutoBackupDate") as? Date
     }
 

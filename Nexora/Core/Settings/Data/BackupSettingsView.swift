@@ -13,7 +13,6 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
-@MainActor
 struct BackupSettingsView: View {
     @Environment(\.modelContext) private var modelContext
 
@@ -147,7 +146,9 @@ struct BackupSettingsView: View {
 
     private func createBackupAndShare() {
         do {
-            exportURL = try BackupManager.shared.writeBackup(context: modelContext)
+            exportURL = try MainActor.assumeIsolated {
+                try BackupManager.shared.writeBackup(context: modelContext)
+            }
             showingShareSheet = true
         } catch {
             present(title: "Export impossible", message: error.localizedDescription)
@@ -178,7 +179,9 @@ struct BackupSettingsView: View {
         guard let backup = pendingBackup else { return }
         defer { pendingBackup = nil }
         do {
-            let report = try BackupManager.shared.restore(from: backup, context: modelContext)
+            let report = try MainActor.assumeIsolated {
+                try BackupManager.shared.restore(from: backup, context: modelContext)
+            }
             present(
                 title: "Restauration terminée",
                 message: """
@@ -195,8 +198,10 @@ struct BackupSettingsView: View {
     private func deleteEverything() {
         do {
             // Instantané écrit avant la suppression, par sécurité.
-            try BackupManager.shared.writeBackup(context: modelContext)
-            try BackupManager.shared.deleteAllData(context: modelContext)
+            try MainActor.assumeIsolated {
+                try BackupManager.shared.writeBackup(context: modelContext)
+                try BackupManager.shared.deleteAllData(context: modelContext)
+            }
             present(
                 title: "Données supprimées",
                 message: "Toutes les données ont été effacées. Une sauvegarde du dernier état a été conservée dans le dossier Documents."
@@ -214,7 +219,6 @@ struct BackupSettingsView: View {
 }
 
 // Backward compatibility wrapper
-@MainActor
 struct SettingsView: View {
     var body: some View {
         NavigationStack {
