@@ -13,6 +13,7 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
+@MainActor
 struct BackupSettingsView: View {
     @Environment(\.modelContext) private var modelContext
 
@@ -213,6 +214,7 @@ struct BackupSettingsView: View {
 }
 
 // Backward compatibility wrapper
+@MainActor
 struct SettingsView: View {
     var body: some View {
         NavigationStack {

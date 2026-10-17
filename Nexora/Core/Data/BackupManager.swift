@@ -49,7 +49,7 @@ final class BackupManager {
         return encoder
     }
 
-    private static var decoder: JSONDecoder {
+    nonisolated private static var decoder: JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
