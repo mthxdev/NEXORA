@@ -86,7 +86,7 @@ final class NotificationService: NSObject, ObservableObject {
         components.hour = hour
         components.minute = minute
 
-        let request = UNCalendarNotificationRequest(
+        let request = UNNotificationRequest(
             identifier: "workoutReminder",
             content: content,
             trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: true)

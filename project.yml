@@ -18,6 +18,8 @@ targets:
       - Nexora
     resources:
       - Nexora/Resources/Assets.xcassets
+    frameworks:
+      - System: UserNotifications
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mathieu.musculog
