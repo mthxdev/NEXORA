@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import UserNotifications
 
 @MainActor
@@ -10,8 +11,9 @@ final class NotificationService: NSObject, ObservableObject {
 
     @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
-    private init() {
+    override init() {
         UNUserNotificationCenter.current().delegate = self
+        super.init()
         Task {
             await self.refreshAuthorizationStatus()
         }

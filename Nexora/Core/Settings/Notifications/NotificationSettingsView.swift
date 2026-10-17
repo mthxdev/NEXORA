@@ -69,8 +69,6 @@ struct NotificationSettingsView: View {
             return "Non autorisé"
         case .notDetermined:
             return "Non demandé"
-        case .restricted:
-            return "Restreint"
         default:
             return "Inconnu"
         }

@@ -120,7 +120,6 @@ struct SectionHeader: View {
             .font(NexoraTypography.headline)
             .foregroundStyle(NexoraColors.secondaryLabel)
             .textCase(nil)
-            .accessibilityAddTraits(.header)
     }
 }
 
@@ -148,7 +147,7 @@ struct EmptyStateView: View {
                     .foregroundStyle(NexoraColors.secondaryLabel)
                     .multilineTextAlignment(.center)
             }
-            .accessibilityElement(children: .combined)
+            .accessibilityElement(children: .combine)
 
             if let actionTitle, let action {
                 Button(actionTitle, action: action)

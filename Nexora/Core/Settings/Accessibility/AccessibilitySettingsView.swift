@@ -4,7 +4,6 @@ struct AccessibilitySettingsView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @Environment(\.accessibilityInvertColors) private var invertColors
-    @Environment(\.accessibilityBoldText) private var boldText
     @AppStorage("reduceTransitions") private var reduceTransitions: Bool = false
 
     var body: some View {
@@ -19,7 +18,6 @@ struct AccessibilitySettingsView: View {
                 StatusRow(label: "Réduction du mouvement", isEnabled: reduceMotion)
                 StatusRow(label: "Différenciation sans couleur", isEnabled: differentiateWithoutColor)
                 StatusRow(label: "Inversion des couleurs", isEnabled: invertColors)
-                StatusRow(label: "Texte gras", isEnabled: boldText)
             }
 
             Section {

@@ -218,7 +218,6 @@ struct AddProgramCard: View {
                 .foregroundStyle(Color.accentColor)
         )
         .accessibilityLabel("Nouveau programme")
-        .accessibilityAddTraits(.button)
     }
 }
 
