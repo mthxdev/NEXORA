@@ -1,3 +1,5 @@
+import Foundation
+
 // MARK: - MuscuLog
 
 struct BackupProgram: Codable {
