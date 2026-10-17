@@ -106,7 +106,7 @@ struct MuscuLogContentView: View {
                 case .progression:
                     MuscuLogProgressionContent()
                 case .settings:
-                    SettingsView()
+                    MuscuLogSettingsContent()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

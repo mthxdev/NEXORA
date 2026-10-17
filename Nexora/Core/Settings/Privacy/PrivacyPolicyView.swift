@@ -9,12 +9,12 @@ struct PrivacyPolicyView: View {
                         .font(NexoraTypography.title1)
                         .foregroundStyle(NexoraColors.label)
 
-                    Text("Politique de confidentialité — Version 2.0")
+                    Text("Version 3.0")
                         .font(NexoraTypography.caption)
                         .foregroundStyle(NexoraColors.secondaryLabel)
 
                     Text("""
-Nexora est une application personnelle. Aucne de vos données n'est jamais collectée, transmise ou partagée avec des services externes. Tout est stocké localement sur votre appareil.
+Nexora est une application personnelle. Aucune de vos données n'est collectée, transmise ou partagée avec un service externe. Tout est stocké localement sur votre appareil.
 """)
                     .font(NexoraTypography.body)
                     .foregroundStyle(NexoraColors.label)
@@ -32,7 +32,9 @@ MuscuLog : programmes d'entraînement, modèles de séances, exercices et histor
 
 LogBook : votre suivi culturel (films, séries, animés, jeux, projets, apprentissages) avec statut et notes personnelles.
 
-Repas : recettes favorisées et données de planification de repas.
+Repas : recettes favorites. Le catalogue de recettes est intégré à l'application et n'est pas modifiable par l'utilisateur.
+
+Journal, Notes, Idées, Objectifs : aucun de ces modules n'existe encore ; aucune donnée de ce type n'est stockée à ce jour.
 """)
                         .font(NexoraTypography.body)
                         .foregroundStyle(NexoraColors.secondaryLabel)
@@ -44,9 +46,11 @@ Repas : recettes favorisées et données de planification de repas.
                         .foregroundStyle(NexoraColors.label)
 
                     Text("""
-Un fichier JSON (MuscuLog_Sauvegarde.json) est généré automatiquement et enregistré dans le dossier Fichiers de votre iPhone. Vous pouvez l'exporter via l'app Fichiers ou le partager manuellement. Vous pouvez également l'importer pour restaurer vos données.
+Un fichier JSON (Nexora_Sauvegarde.json) est écrit dans le dossier Documents de l'application : à chaque lancement et à la fin de chaque séance.
 
-Cette sauvegarde contient uniquement vos programmes et l'historique des séances. Elle est chiffrée par iOS lorsque le stockage est chiffré.
+Ce fichier est accessible depuis l'app Fichiers (dossier « Sur mon iPhone » > Nexora) et peut être exporté avec le bouton de partage depuis Réglages > Sauvegarde.
+
+Limite importante : ce fichier reste à l'intérieur de l'application. Désinstaller Nexora le supprime. Ce n'est pas une sauvegarde externe.
 """)
                         .font(NexoraTypography.body)
                         .foregroundStyle(NexoraColors.secondaryLabel)
@@ -84,7 +88,7 @@ Cette sauvegarde contient uniquement vos programmes et l'historique des séances
                     Text("""
 • Les recettes de repas proviennent d'une liste intégrée (SampleRecipes). Aucune donnée n'est récupérée depuis Internet.
 
-• Le LogBook peut utiliser des identifiants externes (externalID) pour référencer des œuvres, mais ces champs restent vides tant que vous n'entrezez pas manuellement ces identifiants.
+• Le LogBook peut utiliser des identifiants externes (externalID) pour référencer des œuvres, mais ces champs restent vides tant que vous ne saisissez pas manuellement ces identifiants.
 
 • Aucun service en ligne, analytics, ou tracking n'est intégré. Aucune connexion réseau n'est requise pour l'essentiel du fonctionnement.
 

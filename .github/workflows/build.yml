@@ -63,6 +63,10 @@ jobs:
           cp -r build/Build/Products/Release-iphoneos/Nexora.app Payload/
           zip -r Nexora.ipa Payload/
 
+      - name: Verify icon in built app
+        run: |
+          python3 Tools/verify_ipa_icon.py Nexora.ipa Payload/Nexora.app
+
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:

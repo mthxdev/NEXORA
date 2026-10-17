@@ -62,25 +62,15 @@ struct NexoraSettingsView: View {
     
     private var dataSection: some View {
         Section {
-            NavigationLink(destination: MuscuLogSettingsContent()) {
-                Label("Sauvegarde & restauration", systemImage: "externaldrive.badge.icloud")
+            NavigationLink(destination: BackupSettingsView()) {
+                Label("Sauvegarde & données", systemImage: "externaldrive")
             }
-            
-            NavigationLink(destination: Text("Export de données - À venir")) {
-                Label("Exporter mes données", systemImage: "square.and.arrow.up")
-            }
-            .accessibilityLabel("Exporter mes données")
-
-            NavigationLink(destination: Text("Supprimer toutes les données - À venir")) {
-                Label("Effacer toutes les données", systemImage: "trash")
-                    .foregroundStyle(.red)
-            }
-            .accessibilityLabel("Effacer toutes les données")
-            .accessibilityHint("Supprime définitivement toutes les données de l'application")
+            .accessibilityLabel("Sauvegarde et données")
+            .accessibilityHint("Exporter, restaurer ou supprimer vos données")
         } header: {
             Text("Données")
         } footer: {
-            Text("Chaque module gère ses propres données. Les options de sauvegarde sont disponibles par module.")
+            Text("Export, restauration et suppression s'appliquent à l'ensemble des modules.")
         }
     }
     

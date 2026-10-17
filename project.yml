@@ -16,15 +16,18 @@ targets:
     platform: iOS
     sources:
       - Nexora
-    resources:
-      - Nexora/Resources/Assets.xcassets
+    # Ne PAS déclarer Assets.xcassets dans `resources` : il est déjà compilé
+    # par le target via `sources`. Le déclarer deux fois dupliquait
+    # Assets.car dans le bundle et pouvait faire échouer actool.
     frameworks:
       - System: UserNotifications
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mathieu.musculog
         MARKETING_VERSION: "2.0"
-        CURRENT_PROJECT_VERSION: 2
+        # Incrémenté à chaque livraison : SpringBoard ne régénère pas le cache
+        # d'icônes si CFBundleVersion ne change pas.
+        CURRENT_PROJECT_VERSION: 3
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Nexora
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
