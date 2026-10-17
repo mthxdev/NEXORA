@@ -1,22 +1,8 @@
 import SwiftUI
 
 struct NexoraSettingsView: View {
-    @AppStorage("appearance") private var appearance: Appearance = .system
+    @AppStorage("appearance") private var appearance: AppAppearance = .system
     @State private var showingAbout = false
-    
-    enum Appearance: String, CaseIterable {
-        case system = "Système"
-        case light = "Clair"
-        case dark = "Sombre"
-        
-        var icon: String {
-            switch self {
-            case .system: return "circle.lefthalf.filled"
-            case .light: return "sun.max.fill"
-            case .dark: return "moon.fill"
-            }
-        }
-    }
     
     var body: some View {
         NavigationStack {
@@ -40,7 +26,7 @@ struct NexoraSettingsView: View {
     private var appearanceSection: some View {
         Section {
             Picker("Apparence", selection: $appearance) {
-                ForEach(Appearance.allCases, id: \.self) { appearance in
+                ForEach(AppAppearance.allCases, id: \.self) { appearance in
                     Label(appearance.rawValue, systemImage: appearance.icon)
                         .tag(appearance)
                 }
@@ -55,17 +41,20 @@ struct NexoraSettingsView: View {
     
     private var generalSection: some View {
         Section {
-            NavigationLink(destination: Text("Notifications - À venir")) {
+            NavigationLink(destination: NotificationSettingsView()) {
                 Label("Notifications", systemImage: "bell.badge")
             }
-            
-            NavigationLink(destination: Text("Confidentialité - À venir")) {
+            .accessibilityLabel("Réglages des notifications")
+
+            NavigationLink(destination: PrivacyPolicyView()) {
                 Label("Confidentialité", systemImage: "lock.shield")
             }
-            
-            NavigationLink(destination: Text("Accessibilité - À venir")) {
+            .accessibilityLabel("Politique de confidentialité")
+
+            NavigationLink(destination: AccessibilitySettingsView()) {
                 Label("Accessibilité", systemImage: "accessibility")
             }
+            .accessibilityLabel("Réglages d'accessibilité")
         } header: {
             Text("Général")
         }
@@ -80,11 +69,14 @@ struct NexoraSettingsView: View {
             NavigationLink(destination: Text("Export de données - À venir")) {
                 Label("Exporter mes données", systemImage: "square.and.arrow.up")
             }
-            
+            .accessibilityLabel("Exporter mes données")
+
             NavigationLink(destination: Text("Supprimer toutes les données - À venir")) {
                 Label("Effacer toutes les données", systemImage: "trash")
                     .foregroundStyle(.red)
             }
+            .accessibilityLabel("Effacer toutes les données")
+            .accessibilityHint("Supprime définitivement toutes les données de l'application")
         } header: {
             Text("Données")
         } footer: {
@@ -106,14 +98,17 @@ struct NexoraSettingsView: View {
                 }
             }
             .foregroundStyle(NexoraColors.label)
-            
+            .accessibilityLabel("À propos de Nexora")
+
             Link(destination: URL(string: "https://github.com")!) {
                 Label("Code source", systemImage: "chevron.left.forwardslash.chevron.right")
             }
-            
+            .accessibilityLabel("Code source sur GitHub")
+
             Link(destination: URL(string: "https://github.com")!) {
                 Label("Signaler un problème", systemImage: "exclamationmark.bubble")
             }
+            .accessibilityLabel("Signaler un problème")
         } header: {
             Text("À propos")
         } footer: {
@@ -135,9 +130,11 @@ struct AboutView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: NexoraSpacing.lg) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 72, weight: .light))
-                        .foregroundStyle(Color.accentColor)
+                    Image("NexoraLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 72, height: 72)
+                        .accessibilityLabel("Logo Nexora")
                     
                     VStack(spacing: NexoraSpacing.xs) {
                         Text("Nexora")
@@ -195,19 +192,19 @@ struct ModuleInfoRow: View {
     let color: Color
     let title: String
     let description: String
-    
+
     var body: some View {
         HStack(spacing: NexoraSpacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: NexoraRadius.md)
                     .fill(color.opacity(0.15))
                     .frame(width: 44, height: 44)
-                
+
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(color)
             }
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(NexoraTypography.headline)
@@ -216,6 +213,8 @@ struct ModuleInfoRow: View {
                     .foregroundStyle(NexoraColors.secondaryLabel)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title). \(description)")
     }
 }
 

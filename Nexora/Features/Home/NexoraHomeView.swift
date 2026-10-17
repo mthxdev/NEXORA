@@ -34,9 +34,10 @@ struct NexoraHomeView: View {
     
     private var headerSection: some View {
         VStack(spacing: NexoraSpacing.sm) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(Color.accentColor)
+            Image("NexoraLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 48, height: 48)
             
             Text("Bienvenue dans Nexora")
                 .font(NexoraTypography.title1)
@@ -121,6 +122,7 @@ struct NexoraHomeView: View {
                         stats: muscuLogStats
                     )
                 }
+                .accessibilityLabel("Ouvrir MuscuLog — \(muscuLogStats)")
                 .buttonStyle(.plain)
                 
                  NavigationLink(destination: LogBookView()) {
@@ -132,6 +134,7 @@ struct NexoraHomeView: View {
                         stats: "Bientôt disponible"
                     )
                 }
+                .accessibilityLabel("Ouvrir LogBook")
                 .buttonStyle(.plain)
 
                 NavigationLink(destination: MealTabView()) {
@@ -143,6 +146,7 @@ struct NexoraHomeView: View {
                         stats: "\(SampleRecipes.all.count) recettes"
                     )
                 }
+                .accessibilityLabel("Ouvrir Repas — \(SampleRecipes.all.count) recettes")
                 .buttonStyle(.plain)
             }
         }
@@ -189,6 +193,7 @@ struct ProgramCard: View {
             RoundedRectangle(cornerRadius: NexoraRadius.md)
                 .stroke(NexoraColors.separator, lineWidth: 0.5)
         )
+        .accessibilityLabel("\(program.name), \(program.workouts.count) séance\(program.workouts.count > 1 ? "s" : "")")
     }
 }
 
@@ -212,6 +217,8 @@ struct AddProgramCard: View {
                 .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
                 .foregroundStyle(Color.accentColor)
         )
+        .accessibilityLabel("Nouveau programme")
+        .accessibilityAddTraits(.button)
     }
 }
 

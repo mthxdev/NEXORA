@@ -1,11 +1,19 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct NexoraApp: App {
+    @AppStorage("appearance") private var appearance: AppAppearance = .system
+
+    init() {
+        UNUserNotificationCenter.current().delegate = NotificationService.shared
+    }
+
     var body: some Scene {
         WindowGroup {
             AppCoordinator()
+                .preferredColorScheme(appearance.colorScheme)
         }
         .modelContainer(for: [
             Program.self,

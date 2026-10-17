@@ -114,12 +114,13 @@ extension View {
 
 struct SectionHeader: View {
     let title: String
-    
+
     var body: some View {
         Text(title)
             .font(NexoraTypography.headline)
             .foregroundStyle(NexoraColors.secondaryLabel)
             .textCase(nil)
+            .accessibilityAddTraits(.header)
     }
 }
 
@@ -135,18 +136,20 @@ struct EmptyStateView: View {
             Image(systemName: icon)
                 .font(.system(size: 48, weight: .light))
                 .foregroundStyle(NexoraColors.tertiaryLabel)
-            
+                .accessibilityHidden(true)
+
             VStack(spacing: NexoraSpacing.xs) {
                 Text(title)
                     .font(NexoraTypography.title3)
                     .foregroundStyle(NexoraColors.label)
-                
+
                 Text(description)
                     .font(NexoraTypography.subheadline)
                     .foregroundStyle(NexoraColors.secondaryLabel)
                     .multilineTextAlignment(.center)
             }
-            
+            .accessibilityElement(children: .combined)
+
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
                     .primaryButton()
