@@ -33,6 +33,7 @@ struct NexoraApp: App {
             switch result {
             case .success(let container):
                 InitialDataLoader.loadIfEmpty(context: container.mainContext)
+                BackupManager.shared.recoverFromFallback(context: container.mainContext)
                 BackupManager.shared.autoBackup(context: container.mainContext)
                 MealService.shared.setModelContext(container.mainContext)
             case .failure(let error):

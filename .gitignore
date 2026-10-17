@@ -21,3 +21,7 @@ Packages/
 
 # Payload (build artifact)
 Payload/
+
+# Python cache
+__pycache__/
+*.pyc

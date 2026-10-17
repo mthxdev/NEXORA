@@ -42,6 +42,10 @@ final class BackupManager {
     /// Nom du fichier écrit dans le dossier Documents.
     static let backupFileName = "Nexora_Sauvegarde.json"
 
+    /// Fichier temporaire de secours écrit avant une restauration.
+    /// Survit à un crash de l'application pendant la restauration.
+    static let restoreFallbackFileName = ".Nexora_Restore_Fallback.json"
+
     private static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -152,12 +156,13 @@ final class BackupManager {
 
     /// Remplace les données par le contenu de la sauvegarde.
     ///
-    /// Séquence : lecture et validation complètes → instantané des données
-    /// actuelles en mémoire → remplacement → enregistrement. Si l'enregistrement
-    /// échoue, l'instantané est réappliqué pour éviter une perte partielle.
+    /// Séquence : snapshot en mémoire → snapshot sur disque → effacement →
+    /// insertion → enregistrement. Si l'enregistrement échoue, le snapshot
+    /// sur disque est utilisé en dernier recours si le snapshot en mémoire
+    /// est également inutilisable (par exemple après un crash interne).
     @discardableResult
     func restore(from backup: NexoraBackup, context: ModelContext) throws -> RestoreReport {
-        // Instantané de secours, avant toute suppression.
+        // 1. Snapshot en mémoire pour un rollback rapide.
         let fallback: NexoraBackup
         do {
             fallback = try makeBackup(context: context)
@@ -165,22 +170,63 @@ final class BackupManager {
             throw BackupError.saveFailed("instantané de sécurité impossible (\(error.localizedDescription))")
         }
 
+        // 2. Snapshot sur disque : résiste à un crash de l'application.
+        let fallbackURL: URL? = try? Self.documentsURL(fileName: Self.restoreFallbackFileName)
+        if let fallbackURL {
+            do {
+                let fallbackData = try Self.encoder.encode(fallback)
+                try fallbackData.write(to: fallbackURL, options: .atomic)
+            } catch {
+                print("BackupManager: fallback sur disque impossible — \(error)")
+            }
+        }
+
+        // 3. Opération de restauration.
         do {
             try deleteAllData(context: context)
             try insert(backup, into: context)
             try context.save()
         } catch {
-            // Tentative de retour à l'état précédent.
+            // 4. Tentative de rollback depuis le snapshot en mémoire.
+            let restoreError = error
             do {
                 try deleteAllData(context: context)
                 try insert(fallback, into: context)
                 try context.save()
+                print("BackupManager: données précédentes restaurées depuis l'instantané en mémoire.")
             } catch {
-                print("BackupManager: retour arrière impossible — \(error)")
+                print("BackupManager: rollback mémoire échoué — \(error)")
+
+                // 5. Dernier recours : snapshot sur disque.
+                if let diskURL = fallbackURL,
+                   FileManager.default.fileExists(atPath: diskURL.path) {
+                    do {
+                        let diskData = try Data(contentsOf: diskURL)
+                        let diskBackup = try decodeBackup(from: diskData)
+                        try deleteAllData(context: context)
+                        try insert(diskBackup, into: context)
+                        try context.save()
+                        print("BackupManager: données restaurées depuis le fallback sur disque.")
+                    } catch {
+                        print("BackupManager: fallback disque également échoué — \(error)")
+                        throw BackupError.saveFailed(
+                            "la restauration a échoué et les données ne peuvent pas être récupérées (\(restoreError.localizedDescription))"
+                        )
+                    }
+                } else {
+                    throw BackupError.saveFailed(
+                        "la restauration a échoué et les données ne peuvent pas être récupérées (\(restoreError.localizedDescription))"
+                    )
+                }
             }
-            throw BackupError.saveFailed(error.localizedDescription)
         }
 
+        // 6. Nettoyage du fichier de secours.
+        if let fallbackURL {
+            try? FileManager.default.removeItem(at: fallbackURL)
+        }
+
+        // 7. Application des réglages et retour du rapport.
         applySettings(backup.settings)
 
         return RestoreReport(
@@ -212,6 +258,33 @@ final class BackupManager {
         let report = try restore(from: backup, context: context)
         autoBackup(context: context)
         return report
+    }
+
+    /// Tente de récupérer les données après un crash pendant une restauration.
+    ///
+    /// À appeler au lancement de l'application, avant `autoBackup`.
+    /// Si un fichier de fallback orphelin est présent (créé par une restauration
+    /// interrompue), tente de restaurer les données depuis ce fichier.
+    /// Nettoie toujours le fichier de fallback, quelle que soit l'issue.
+    @discardableResult
+    func recoverFromFallback(context: ModelContext) -> Bool {
+        guard let fallbackURL = try? Self.documentsURL(fileName: Self.restoreFallbackFileName),
+              FileManager.default.fileExists(atPath: fallbackURL.path) else {
+            return false
+        }
+
+        do {
+            let data = try Data(contentsOf: fallbackURL)
+            let backup = try decodeBackup(from: data)
+            try restore(from: backup, context: context)
+            print("BackupManager: données récupérées depuis le fallback après crash.")
+        } catch {
+            print("BackupManager: récupération depuis le fallback échouée — \(error)")
+            // Même si la récupération échoue, on nettoie le fichier.
+        }
+
+        try? FileManager.default.removeItem(at: fallbackURL)
+        return true
     }
 
     // MARK: - Suppression

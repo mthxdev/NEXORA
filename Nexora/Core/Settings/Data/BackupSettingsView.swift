@@ -84,6 +84,10 @@ struct BackupSettingsView: View {
             Une sauvegarde complète est écrite dans le dossier Documents de \
             l'application à chaque lancement et à la fin d'une séance. Elle couvre \
             MuscuLog, LogBook, les favoris de Repas et vos réglages.
+
+            Cette copie automatique est visible dans l'application Fichiers : \
+            Parcourir → Emplacements → Nexora. Elle ne survit pas à une \
+            désinstallation de l'application.
             """)
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -95,21 +99,23 @@ struct BackupSettingsView: View {
             Button {
                 createBackupAndShare()
             } label: {
-                Label("Exporter une sauvegarde", systemImage: "square.and.arrow.up")
+                Label("Exporter une copie", systemImage: "square.and.arrow.up")
             }
+            .accessibilityHint("Crée une copie exportable à conserver dans iCloud Drive ou Fichiers")
 
             Button {
                 showingFileImporter = true
             } label: {
-                Label("Restaurer depuis un fichier", systemImage: "arrow.down.doc")
+                Label("Importer et restaurer", systemImage: "arrow.down.doc")
             }
         } header: {
             Text("Sauvegarde")
         } footer: {
             Text("""
-            Le fichier dans Documents reste dans l'application : il ne survit pas à \
-            une désinstallation. Utilisez « Exporter » pour en conserver une copie \
-            dans Fichiers, iCloud Drive ou sur un ordinateur.
+            Pour un changement d'iPhone : utilisez « Exporter une copie », \
+            choisissez « Enregistrer dans Fichiers » puis « iCloud Drive ». \
+            Sur le nouvel iPhone, ouvrez Nexora → Réglages → Sauvegarde → \
+            « Importer et restaurer ».
             """)
         }
     }
@@ -137,8 +143,8 @@ struct BackupSettingsView: View {
         (version \(backup.version)) : \(backup.programs.count) programme(s), \
         \(backup.workouts.count) séance(s), \(logBook) élément(s) de LogBook.
 
-        Vos données actuelles seront remplacées. Un instantané est conservé en \
-        mémoire et réappliqué si l'opération échoue.
+        Vos données actuelles seront remplacées. Un instantané est conservé \
+        sur disque et réappliqué si l'opération échoue.
         """
     }
 
