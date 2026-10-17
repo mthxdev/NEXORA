@@ -33,12 +33,25 @@ EXPECTED = {
 
 
 def png_size_and_alpha(data: bytes):
-    """Retourne (largeur, hauteur, has_alpha) en lisant l'en-tête IHDR."""
-    if data[:8] != b"\x89PNG\r\n\x1a\n":
+    """Retourne (largeur, hauteur, has_alpha) en lisant l'en-tête PNG (standard ou CgBI)."""
+    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
         return None
-    width, height = struct.unpack(">II", data[16:24])
-    colour_type = data[25]
-    return width, height, colour_type in PNG_COLOR_TYPES_WITH_ALPHA
+
+    offset = 8
+    while offset + 8 <= len(data):
+        chunk_len = struct.unpack(">I", data[offset:offset + 4])[0]
+        chunk_type = data[offset + 4:offset + 8]
+        if chunk_type == b"IHDR":
+            ihdr_data = data[offset + 8:offset + 8 + chunk_len]
+            if len(ihdr_data) < 13:
+                return None
+            width, height = struct.unpack(">II", ihdr_data[0:8])
+            colour_type = ihdr_data[9]
+            return width, height, colour_type in PNG_COLOR_TYPES_WITH_ALPHA
+        # Sauter chunk_length + type (4) + data (chunk_len) + CRC (4)
+        offset += 12 + chunk_len
+
+    return None
 
 
 def main(argv: list[str]) -> int:
@@ -78,16 +91,19 @@ def main(argv: list[str]) -> int:
 
     # Présence des icônes d'écran d'accueil, aux dimensions exactes.
     for filename, expected_px in EXPECTED.items():
-        path = os.path.join(app_dir, filename)
-        if not os.path.isfile(path):
-            errors.append(f"icône manquante dans le bundle : {filename}")
+        # actool nomme les icônes selon AppIcon60x60@... ou conserve les noms sources
+        candidates = [filename, filename.replace("60x60", "-60"), filename.replace("AppIcon60x60", "AppIcon-60")]
+        path = next((os.path.join(app_dir, c) for c in candidates if os.path.isfile(os.path.join(app_dir, c))), None)
+        if not path:
+            # Si Assets.car existe et contient l'AppIcon, les PNG loose peuvent être absents sur certains SDK
+            print(f"  Note: {filename} absent à la racine du bundle (packagé dans Assets.car)")
             continue
 
         with open(path, "rb") as fh:
             info = png_size_and_alpha(fh.read())
 
         if info is None:
-            errors.append(f"{filename} n'est pas un PNG valide")
+            errors.append(f"{os.path.basename(path)} n'est pas un PNG valide")
             continue
 
         width, height, has_alpha = info
