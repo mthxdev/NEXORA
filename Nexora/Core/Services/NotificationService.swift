@@ -12,8 +12,8 @@ final class NotificationService: NSObject, ObservableObject {
     @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
     override init() {
-        UNUserNotificationCenter.current().delegate = self
         super.init()
+        UNUserNotificationCenter.current().delegate = self
         Task {
             await self.refreshAuthorizationStatus()
         }
