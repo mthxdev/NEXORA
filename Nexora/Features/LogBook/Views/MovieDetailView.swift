@@ -199,18 +199,27 @@ struct RatingDisplay: View {
     let rating: Int?
     
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(1...10, id: \.self) { star in
-                Image(systemName: star <= (rating ?? 0) ? "star.fill" : "star")
-                    .font(.title3)
-                    .foregroundStyle(star <= (rating ?? 0) ? .orange : NexoraColors.tertiaryLabel)
+        VStack(alignment: .leading, spacing: NexoraSpacing.xs) {
+            if let rating {
+                Text("Note personnelle")
+                    .font(NexoraTypography.caption)
+                    .foregroundStyle(NexoraColors.secondaryLabel)
+            }
+            
+            HStack(spacing: 2) {
+                ForEach(1...10, id: \.self) { star in
+                    Image(systemName: star <= (rating ?? 0) ? "star.fill" : "star")
+                        .font(.callout)
+                        .foregroundStyle(star <= (rating ?? 0) ? .orange : NexoraColors.tertiaryLabel)
+                        .frame(minWidth: 0, maxWidth: .infinity)
+                }
             }
             
             if let rating {
                 Text("\(rating)/10")
-                    .font(NexoraTypography.subheadline.weight(.medium))
+                    .font(NexoraTypography.caption.weight(.medium))
                     .foregroundStyle(.orange)
-                    .padding(.leading, 8)
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
     }

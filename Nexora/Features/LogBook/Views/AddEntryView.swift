@@ -347,23 +347,24 @@ struct RatingPicker: View {
                 Spacer()
                 if let rating {
                     Text("\(rating)/10")
-                        .font(NexoraTypography.subheadline.weight(.medium))
+                        .font(NexoraTypography.caption.weight(.medium))
                         .foregroundStyle(.orange)
                 } else {
                     Text("Non noté")
-                        .font(NexoraTypography.subheadline)
+                        .font(NexoraTypography.caption)
                         .foregroundStyle(NexoraColors.tertiaryLabel)
                 }
             }
             
-            HStack(spacing: 4) {
+            HStack(spacing: 2) {
                 ForEach(1...10, id: \.self) { star in
                     Button {
                         rating = (rating == star) ? nil : star
                     } label: {
                         Image(systemName: star <= (rating ?? 0) ? "star.fill" : "star")
-                            .font(.title3)
+                            .font(.callout)
                             .foregroundStyle(star <= (rating ?? 0) ? .orange : NexoraColors.tertiaryLabel)
+                            .frame(minWidth: 0, maxWidth: .infinity)
                     }
                     .buttonStyle(.plain)
                 }

@@ -2,12 +2,15 @@ import SwiftUI
 
 struct NexoraSettingsView: View {
     @AppStorage("appearance") private var appearance: AppAppearance = .system
+    @AppStorage("appLogo") private var appLogo: AppLogo = .classic
     @State private var showingAbout = false
     
     var body: some View {
         NavigationStack {
             List {
                 appearanceSection
+                
+                logoSection
                 
                 generalSection
                 
@@ -18,7 +21,7 @@ struct NexoraSettingsView: View {
             .navigationTitle("Réglages")
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingAbout) {
-                AboutView()
+                AboutView(selectedLogo: appLogo)
             }
         }
     }
@@ -39,18 +42,44 @@ struct NexoraSettingsView: View {
         }
     }
     
+    private var logoSection: some View {
+        Section {
+            Picker("Logo de l'application", selection: $appLogo) {
+                ForEach(AppLogo.allCases, id: \.self) { logo in
+                    HStack {
+                        RoundedRectangle(cornerRadius: NexoraRadius.sm)
+                            .fill(logo.previewColor)
+                            .frame(width: 28, height: 28)
+                            .overlay(
+                                Image(systemName: "app.fill")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.9))
+                            )
+                        Text(logo.displayName)
+                    }
+                    .tag(logo)
+                }
+            }
+            .pickerStyle(.menu)
+        } header: {
+            Text("Logo")
+        } footer: {
+            Text("Le logo sélectionné s'affiche sur l'écran d'accueil et dans À propos.")
+        }
+    }
+    
     private var generalSection: some View {
         Section {
             NavigationLink(destination: NotificationSettingsView()) {
                 Label("Notifications", systemImage: "bell.badge")
             }
             .accessibilityLabel("Réglages des notifications")
-
+ 
             NavigationLink(destination: PrivacyPolicyView()) {
                 Label("Confidentialité", systemImage: "lock.shield")
             }
             .accessibilityLabel("Politique de confidentialité")
-
+ 
             NavigationLink(destination: AccessibilitySettingsView()) {
                 Label("Accessibilité", systemImage: "accessibility")
             }
@@ -89,12 +118,12 @@ struct NexoraSettingsView: View {
             }
             .foregroundStyle(NexoraColors.label)
             .accessibilityLabel("À propos de Nexora")
-
+ 
             Link(destination: URL(string: "https://github.com")!) {
                 Label("Code source", systemImage: "chevron.left.forwardslash.chevron.right")
             }
             .accessibilityLabel("Code source sur GitHub")
-
+ 
             Link(destination: URL(string: "https://github.com")!) {
                 Label("Signaler un problème", systemImage: "exclamationmark.bubble")
             }
@@ -115,12 +144,13 @@ struct NexoraSettingsView: View {
 
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
+    let selectedLogo: AppLogo
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: NexoraSpacing.lg) {
-                    Image("NexoraLogo")
+                    Image(selectedLogo.assetName)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 72, height: 72)
@@ -147,7 +177,7 @@ struct AboutView: View {
                     VStack(alignment: .leading, spacing: NexoraSpacing.md) {
                         ModuleInfoRow(icon: "dumbbell.fill", color: .blue, title: "MuscuLog", description: "Suivi musculation complet avec programmes, séances et progression")
                         ModuleInfoRow(icon: "book.fill", color: .purple, title: "LogBook", description: "Films, séries, animés, jeux, projets, apprentissages (à venir)")
-                    ModuleInfoRow(icon: "carrot.fill", color: .orange, title: "Repas", description: "Recettes culinaires avec planification, nutrition estimée et favoris")
+                        ModuleInfoRow(icon: "carrot.fill", color: .orange, title: "Repas", description: "Recettes culinaires avec planification, nutrition estimée et favoris")
                     }
                     .padding(.horizontal, NexoraSpacing.xl)
                     
