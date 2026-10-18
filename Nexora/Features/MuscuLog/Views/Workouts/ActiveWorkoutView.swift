@@ -28,9 +28,11 @@ struct ActiveWorkoutView: View {
                     List {
                         ForEach(completedWorkout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })) { exercise in
                             Section {
-                                ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
-                                    ActiveSetRowView(set: set)
-                                }
+ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
+                            ActiveSetRowView(set: set) {
+                                deleteSet(set, from: exercise)
+                            }
+                        }
                                 Button {
                                     addSet(to: exercise)
                                 } label: {
@@ -197,6 +199,20 @@ struct ActiveWorkoutView: View {
         } catch {
             print("Impossible de sauvegarder la séance : \(error.localizedDescription)")
         }
+    }
+
+    @MainActor
+    private func deleteSet(_ set: CompletedSet, from exercise: CompletedExercise) {
+        guard let workout = completedWorkout else { return }
+        modelContext.delete(set)
+        
+        // Réorganiser les numéros de séries
+        let sortedSets = exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })
+        for (index, s) in sortedSets.enumerated() {
+            s.setNumber = index + 1
+        }
+        
+        saveContext()
     }
 
     @MainActor
