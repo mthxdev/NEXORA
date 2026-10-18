@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct NexoraHomeView: View {
+    @AppStorage("appLogo") private var appLogo: AppLogo = .classic
     @Query(sort: \CompletedWorkout.date, order: .reverse) private var completedWorkouts: [CompletedWorkout]
     @Query(sort: \Program.createdAt) private var programs: [Program]
     
@@ -34,7 +35,7 @@ struct NexoraHomeView: View {
     
     private var headerSection: some View {
         VStack(spacing: NexoraSpacing.sm) {
-            Image("NexoraLogo")
+            Image(appLogo.assetName)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 48, height: 48)

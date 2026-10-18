@@ -21,3 +21,33 @@ enum AppAppearance: String, CaseIterable {
         }
     }
 }
+
+enum AppLogo: String, CaseIterable {
+    case classic = "Classique"
+    case gradient = "Dégradé"
+    case minimal = "Minimal"
+    case bold = "Bold"
+    case mono = "Mono"
+
+    var displayName: String { rawValue }
+
+    var assetName: String {
+        switch self {
+        case .classic: return "NexoraLogo"
+        case .gradient: return "NexoraLogoGradient"
+        case .minimal: return "NexoraLogoMinimal"
+        case .bold: return "NexoraLogoBold"
+        case .mono: return "NexoraLogoMono"
+        }
+    }
+
+    var previewColor: Color {
+        switch self {
+        case .classic: return Color(red: 0.15, green: 0.2, blue: 0.45)
+        case .gradient: return Color(red: 0.1, green: 0.15, blue: 0.4)
+        case .minimal: return Color(red: 0.2, green: 0.25, blue: 0.5)
+        case .bold: return Color(red: 0.08, green: 0.12, blue: 0.35)
+        case .mono: return Color(red: 0.12, green: 0.18, blue: 0.4)
+        }
+    }
+}
