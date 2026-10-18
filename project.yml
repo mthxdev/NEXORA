@@ -16,6 +16,8 @@ targets:
     platform: iOS
     sources:
       - Nexora
+    resources:
+      - Nexora/Resources/Assets.xcassets
     # Ne PAS déclarer Assets.xcassets dans `resources` : il est déjà compilé
     # par le target via `sources`. Le déclarer deux fois dupliquait
     # Assets.car dans le bundle et pouvait faire échouer actool.
