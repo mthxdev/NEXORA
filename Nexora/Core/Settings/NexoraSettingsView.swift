@@ -46,18 +46,8 @@ struct NexoraSettingsView: View {
         Section {
             Picker("Logo de l'application", selection: $appLogo) {
                 ForEach(AppLogo.allCases, id: \.self) { logo in
-                    HStack {
-                        RoundedRectangle(cornerRadius: NexoraRadius.sm)
-                            .fill(logo.previewColor)
-                            .frame(width: 28, height: 28)
-                            .overlay(
-                                Image(systemName: "app.fill")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(.white.opacity(0.9))
-                            )
-                        Text(logo.displayName)
-                    }
-                    .tag(logo)
+                    Label(logo.displayName, systemImage: "app.fill")
+                        .tag(logo)
                 }
             }
             .pickerStyle(.menu)
