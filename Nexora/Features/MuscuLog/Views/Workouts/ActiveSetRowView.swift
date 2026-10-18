@@ -4,12 +4,10 @@ import SwiftData
 struct ActiveSetRowView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var set: CompletedSet
-    var onDelete: (() -> Void)? = nil
 
     // Pour l'interface, on utilise des String pour éviter l'affichage de "0" par défaut au milieu du TextField
     @State private var weightString: String = ""
     @State private var repsString: String = ""
-    @State private var showingDelete = false
 
     var body: some View {
         HStack {
@@ -57,21 +55,6 @@ struct ActiveSetRowView: View {
                 .frame(width: 30, alignment: .leading)
         }
         .padding(.vertical, 2)
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
-                showingDelete = true
-            } label: {
-                Label("Supprimer", systemImage: "trash")
-            }
-        }
-        .alert("Supprimer cette série ?", isPresented: $showingDelete) {
-            Button("Annuler", role: .cancel) { }
-            Button("Supprimer", role: .destructive) {
-                onDelete?()
-            }
-        } message: {
-            Text("Cette action est irréversible.")
-        }
         .onAppear {
             if set.weight > 0 {
                 weightString = String(format: "%g", set.weight)

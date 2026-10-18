@@ -15,8 +15,6 @@ struct ActiveWorkoutView: View {
     @State private var newExerciseName = ""
     @State private var newExerciseTargetSets = 3
     @State private var insertAfterExercise: CompletedExercise?
-    @State private var exerciseToDeleteID: String?
-    @State private var showingDeleteExerciseAlert = false
 
     init(workoutTemplate: WorkoutTemplate, existingWorkout: CompletedWorkout? = nil) {
         self.workoutTemplate = workoutTemplate
@@ -31,9 +29,7 @@ struct ActiveWorkoutView: View {
                         ForEach(completedWorkout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })) { exercise in
                             Section {
                                 ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
-                                    ActiveSetRowView(set: set) {
-                                        deleteSet(set, from: exercise)
-                                    }
+                                    ActiveSetRowView(set: set)
                                 }
                                 Button {
                                     addSet(to: exercise)
@@ -47,21 +43,10 @@ struct ActiveWorkoutView: View {
                                     Label("Ajouter un exercice", systemImage: "plus.square")
                                 }
                             } header: {
-                                HStack {
-                                    Text(exercise.exerciseName)
-                                        .font(.headline)
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                    Button {
-                                        exerciseToDeleteID = exercise.id.uuidString
-                                        showingDeleteExerciseAlert = true
-                                    } label: {
-                                        Image(systemName: "trash")
-                                            .foregroundStyle(.red)
-                                            .font(.subheadline)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
+                                Text(exercise.exerciseName)
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                            }
                         }
                     }
                 } else {
@@ -95,26 +80,6 @@ struct ActiveWorkoutView: View {
                 }
             } message: {
                 Text("Entrez le nom du nouvel exercice. Il sera inséré après l'exercice courant.")
-            }
-            .alert("Supprimer cet exercice ?", isPresented: $showingDeleteExerciseAlert) {
-                Button("Annuler", role: .cancel) { exerciseToDeleteID = nil }
-                Button("Supprimer", role: .destructive) {
-                    if let idString = exerciseToDeleteID,
-                       let id = UUID(uuidString: idString),
-                       let ex = completedWorkout?.exercises.first(where: { $0.id == id }) {
-                        deleteExercise(ex)
-                    }
-                    exerciseToDeleteID = nil
-                }
-            } message: {
-                if let idString = exerciseToDeleteID,
-                   let id = UUID(uuidString: idString),
-                   let ex = completedWorkout?.exercises.first(where: { $0.id == id }) {
-                    let hasSets = !ex.sets.isEmpty
-                    Text(hasSets
-                        ? "Cet exercice contient \(ex.sets.count) série\(ex.sets.count > 1 ? "s" : ""). La suppression est irréversible."
-                        : "Cet exercice ne contient pas de séries. Confirmez la suppression.")
-                }
             }
             .alert("Annuler la séance ?", isPresented: $showingCancelAlert) {
                 Button("Continuer l'entraînement", role: .cancel) { }
@@ -222,36 +187,6 @@ struct ActiveWorkoutView: View {
             modelContext.insert(newSet)
         }
 
-        saveContext()
-    }
-
-    @MainActor
-    private func deleteSet(_ set: CompletedSet, from exercise: CompletedExercise) {
-        guard let workout = completedWorkout else { return }
-        modelContext.delete(set)
-        
-        // Réorganiser les numéros de séries
-        let sortedSets = exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })
-        for (index, s) in sortedSets.enumerated() {
-            s.setNumber = index + 1
-        }
-        
-        saveContext()
-    }
-
-    @MainActor
-    private func deleteExercise(_ exercise: CompletedExercise) {
-        guard let workout = completedWorkout else { return }
-        
-        // Supprimer l'exercice (les séries en cascade via @Relationship)
-        modelContext.delete(exercise)
-        
-        // Réorganiser l'ordre des exercices restants
-        let sortedExercises = workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })
-        for (index, ex) in sortedExercises.enumerated() {
-            ex.displayOrder = index
-        }
-        
         saveContext()
     }
 
