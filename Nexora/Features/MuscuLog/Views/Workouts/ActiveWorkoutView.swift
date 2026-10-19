@@ -35,9 +35,9 @@ struct ActiveWorkoutView: View {
                                 ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
                                     ActiveSetRowView(
                                         set: set,
-                                        onDelete: { deleteSet(setID: set.id, exerciseID: exercise.id) },
-                                        onWeightChange: { updateSetWeight(setID: set.id, weight: $0) },
-                                        onRepsChange: { updateSetReps(setID: set.id, reps: $0) }
+                                        onDelete: { deleteSet(set, from: exercise) },
+                                        onWeightChange: { updateSetWeight(set, weight: $0) },
+                                        onRepsChange: { updateSetReps(set, reps: $0) }
                                     )
                                 }
                                 Button {
@@ -211,40 +211,15 @@ struct ActiveWorkoutView: View {
     }
 
     @MainActor
-    private func updateSetWeight(_ setID: UUID, weight: Double) {
-        guard let workout = completedWorkout else { return }
-        if let exercise = workout.exercises.first(where: { $0.sets.contains(where: { $0.id == setID }) }),
-           let set = exercise.sets.first(where: { $0.id == setID }) {
-            set.weight = weight
-            saveContext()
-        }
+    private func updateSetWeight(_ set: CompletedSet, weight: Double) {
+        set.weight = weight
+        saveContext()
     }
 
     @MainActor
-    private func updateSetReps(_ setID: UUID, reps: Int) {
-        guard let workout = completedWorkout else { return }
-        if let exercise = workout.exercises.first(where: { $0.sets.contains(where: { $0.id == setID }) }),
-           let set = exercise.sets.first(where: { $0.id == setID }) {
-            set.reps = reps
-            saveContext()
-        }
-    }
-
-    @MainActor
-    private func deleteSet(_ setID: UUID, exerciseID: UUID) {
-        guard let workout = completedWorkout else { return }
-        if let exercise = workout.exercises.first(where: { $0.id == exerciseID }),
-           let set = exercise.sets.first(where: { $0.id == setID }) {
-            modelContext.delete(set)
-
-            // Réorganiser les numéros de séries
-            let sortedSets = exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })
-            for (index, s) in sortedSets.enumerated() {
-                s.setNumber = index + 1
-            }
-
-            saveContext()
-        }
+    private func updateSetReps(_ set: CompletedSet, reps: Int) {
+        set.reps = reps
+        saveContext()
     }
 
     @MainActor
@@ -276,7 +251,7 @@ struct ActiveWorkoutView: View {
         saveContext()
     }
 
-@MainActor
+    @MainActor
     private func saveContext() {
         do {
             try modelContext.save()
@@ -286,20 +261,17 @@ struct ActiveWorkoutView: View {
     }
 
     @MainActor
-    private func deleteSet(_ setID: UUID, exerciseID: UUID) {
+    private func deleteSet(_ set: CompletedSet, from exercise: CompletedExercise) {
         guard let workout = completedWorkout else { return }
-        if let exercise = workout.exercises.first(where: { $0.id == exerciseID }),
-           let set = exercise.sets.first(where: { $0.id == setID }) {
-            modelContext.delete(set)
-
-            // Réorganiser les numéros de séries
-            let sortedSets = exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })
-            for (index, s) in sortedSets.enumerated() {
-                s.setNumber = index + 1
-            }
-
-            saveContext()
+        modelContext.delete(set)
+        
+        // Réorganiser les numéros de séries
+        let sortedSets = exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })
+        for (index, s) in sortedSets.enumerated() {
+            s.setNumber = index + 1
         }
+        
+        saveContext()
     }
 
     @MainActor
