@@ -2,9 +2,10 @@ import SwiftUI
 import SwiftData
 
 struct ActiveSetRowView: View {
-    @Environment(\.modelContext) private var modelContext
     let set: CompletedSet
     let onDelete: () -> Void
+    let onWeightChange: (Double) -> Void
+    let onRepsChange: (Int) -> Void
 
     // Pour l'interface, on utilise des String pour éviter l'affichage de "0" par défaut au milieu du TextField
     @State private var weightString: String = ""
@@ -29,8 +30,9 @@ struct ActiveSetRowView: View {
                 .frame(width: 70)
                 .onChange(of: weightString) { _, newValue in
                     let filtered = newValue.replacingOccurrences(of: ",", with: ".")
-                    // Note: set is a let, we need to use modelContext to update
-                    // The parent view handles persistence via onDelete
+                    if let weight = Double(filtered) {
+                        onWeightChange(weight)
+                    }
                 }
 
             Text("kg")
@@ -47,7 +49,9 @@ struct ActiveSetRowView: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 60)
                 .onChange(of: repsString) { _, newValue in
-                    // The parent view handles persistence
+                    if let reps = Int(newValue) {
+                        onRepsChange(reps)
+                    }
                 }
 
             Text("reps")
@@ -72,7 +76,6 @@ struct ActiveSetRowView: View {
             Text("Cette action est irréversible.")
         }
         .onAppear {
-            // Initialize strings from the set values
             weightString = set.weight > 0 ? String(format: "%g", set.weight) : ""
             repsString = set.reps > 0 ? String(set.reps) : ""
         }
