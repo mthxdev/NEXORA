@@ -178,7 +178,9 @@ struct LogoDiagnosticView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, NexoraSpacing.lg)
                     
-                    ForEach(logos, id: \.0) { logo, description in
+                    ForEach(logos, id: \.0) { element in
+                        let logo = element.0
+                        let description = element.1
                         VStack(alignment: .leading, spacing: NexoraSpacing.md) {
                             Text(logo.displayName)
                                 .font(NexoraTypography.headline)
