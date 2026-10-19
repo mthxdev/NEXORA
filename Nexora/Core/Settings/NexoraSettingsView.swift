@@ -4,6 +4,7 @@ struct NexoraSettingsView: View {
     @AppStorage("appearance") private var appearance: AppAppearance = .system
     @AppStorage("appLogo") private var appLogo: AppLogo = .classic
     @State private var showingAbout = false
+    @State private var showingLogoDiagnostic = false
     
     var body: some View {
         NavigationStack {
@@ -17,11 +18,16 @@ struct NexoraSettingsView: View {
                 dataSection
                 
                 aboutSection
+                
+                diagnosticSection
             }
             .navigationTitle("Réglages")
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingAbout) {
                 AboutView(selectedLogo: appLogo)
+            }
+            .sheet(isPresented: $showingLogoDiagnostic) {
+                LogoDiagnosticView()
             }
         }
     }
@@ -125,10 +131,98 @@ struct NexoraSettingsView: View {
         }
     }
     
+    private var diagnosticSection: some View {
+        Section {
+            Button {
+                showingLogoDiagnostic = true
+            } label: {
+                Label("Diagnostic des logos", systemImage: "photo.on.rectangle.angled")
+            }
+        } header: {
+            Text("Diagnostic")
+        } footer: {
+            Text("Affiche les 5 logos générés pour vérifier leur correspondance avec les références.")
+        }
+    }
+    
     private var versionFooter: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "Nexora \(version) (\(build))"
+    }
+}
+
+struct LogoDiagnosticView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    private let logos: [(AppLogo, String)] = [
+        (.classic, "NexoraLogo (Classique - N géométrique nuit)"),
+        (.gradient, "NexoraLogoGradient (Dégradé - N géométrique clair)"),
+        (.minimal, "NexoraLogoMinimal (Minimal - Progression angulaire)"),
+        (.bold, "NexoraLogoBold (Bold - Étoile 4 branches)"),
+        (.mono, "NexoraLogoMono (Mono - N circulaire)")
+    ]
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: NexoraSpacing.xl) {
+                    Text("Diagnostic des 5 logos")
+                        .font(NexoraTypography.title1)
+                        .fontWeight(.bold)
+                        .padding(.top, NexoraSpacing.lg)
+                    
+                    Text("Vérifiez que chaque logo correspond à sa référence visuelle.")
+                        .font(NexoraTypography.body)
+                        .foregroundStyle(NexoraColors.secondaryLabel)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, NexoraSpacing.lg)
+                    
+                    ForEach(logos, id: \.0) { logo, description in
+                        VStack(alignment: .leading, spacing: NexoraSpacing.md) {
+                            Text(logo.displayName)
+                                .font(NexoraTypography.headline)
+                                .foregroundStyle(NexoraColors.label)
+                            
+                            Text(description)
+                                .font(NexoraTypography.caption)
+                                .foregroundStyle(NexoraColors.secondaryLabel)
+                            
+                            Image(logo.assetName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 120, height: 120)
+                                .background(NexoraColors.cardBackground)
+                                .cornerRadius(NexoraRadius.md)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: NexoraRadius.md)
+                                        .stroke(NexoraColors.separator, lineWidth: 1)
+                                )
+                                .frame(maxWidth: .infinity, alignment: .center)
+                            
+                            Text("Asset: \(logo.assetName)")
+                                .font(NexoraTypography.caption2)
+                                .foregroundStyle(NexoraColors.tertiaryLabel)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        .padding(NexoraSpacing.md)
+                        .background(NexoraColors.cardBackground)
+                        .cornerRadius(NexoraRadius.lg)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(NexoraSpacing.md)
+            }
+            .background(NexoraColors.groupedBackground)
+            .navigationTitle("Diagnostic Logos")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fermer") { dismiss() }
+                }
+            }
+        }
     }
 }
 
