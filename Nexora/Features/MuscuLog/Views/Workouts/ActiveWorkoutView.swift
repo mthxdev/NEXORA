@@ -264,11 +264,15 @@ struct ActiveWorkoutView: View {
     private func deleteSet(_ set: CompletedSet, exerciseID: UUID) {
         guard let workout = completedWorkout else { return }
         if let exercise = workout.exercises.first(where: { $0.id == exerciseID }) {
+            // Capture les séries à renuméroter AVANT de supprimer (évite d'accéder à une relation SwiftData invalide)
+            let setsToRenumber = exercise.sets
+                .filter { $0.id != set.id }
+                .sorted(by: { $0.setNumber < $1.setNumber })
+            
             modelContext.delete(set)
             
-            // Réorganiser les numéros de séries
-            let sortedSets = exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })
-            for (index, s) in sortedSets.enumerated() {
+            // Renuméroter à partir de la liste capturée
+            for (index, s) in setsToRenumber.enumerated() {
                 s.setNumber = index + 1
             }
             

@@ -48,7 +48,7 @@ struct ActiveSetRowView: View {
                 .multilineTextAlignment(.center)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 60)
-                .onChange(of: repsString) { _, newValue in
+            .onChange(of: repsString) { _, newValue in
                     if let reps = Int(newValue) {
                         onRepsChange(reps)
                     }
