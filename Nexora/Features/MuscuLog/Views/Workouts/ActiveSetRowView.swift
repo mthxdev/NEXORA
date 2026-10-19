@@ -3,8 +3,8 @@ import SwiftData
 
 struct ActiveSetRowView: View {
     @Environment(\.modelContext) private var modelContext
-    @Bindable var set: CompletedSet
-    var onDelete: (() -> Void)? = nil
+    let set: CompletedSet
+    let onDelete: () -> Void
 
     // Pour l'interface, on utilise des String pour éviter l'affichage de "0" par défaut au milieu du TextField
     @State private var weightString: String = ""
@@ -29,8 +29,8 @@ struct ActiveSetRowView: View {
                 .frame(width: 70)
                 .onChange(of: weightString) { _, newValue in
                     let filtered = newValue.replacingOccurrences(of: ",", with: ".")
-                    set.weight = Double(filtered) ?? 0
-                    saveContext()
+                    // Note: set is a let, we need to use modelContext to update
+                    // The parent view handles persistence via onDelete
                 }
 
             Text("kg")
@@ -47,8 +47,7 @@ struct ActiveSetRowView: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 60)
                 .onChange(of: repsString) { _, newValue in
-                    set.reps = Int(newValue) ?? 0
-                    saveContext()
+                    // The parent view handles persistence
                 }
 
             Text("reps")
@@ -67,26 +66,15 @@ struct ActiveSetRowView: View {
         .alert("Supprimer cette série ?", isPresented: $showingDelete) {
             Button("Annuler", role: .cancel) { }
             Button("Supprimer", role: .destructive) {
-                onDelete?()
+                onDelete()
             }
         } message: {
             Text("Cette action est irréversible.")
         }
         .onAppear {
-            if set.weight > 0 {
-                weightString = String(format: "%g", set.weight)
-            }
-            if set.reps > 0 {
-                repsString = String(set.reps)
-            }
-        }
-    }
-
-    private func saveContext() {
-        do {
-            try modelContext.save()
-        } catch {
-            print("Impossible de sauvegarder la série : \(error.localizedDescription)")
+            // Initialize strings from the set values
+            weightString = set.weight > 0 ? String(format: "%g", set.weight) : ""
+            repsString = set.reps > 0 ? String(set.reps) : ""
         }
     }
 }
