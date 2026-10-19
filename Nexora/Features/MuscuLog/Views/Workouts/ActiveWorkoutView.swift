@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UIKit
 
 struct ActiveWorkoutView: View {
     @Environment(\.modelContext) private var modelContext
@@ -323,9 +322,6 @@ struct ActiveWorkoutView: View {
     private func finishWorkout() {
         completedWorkout?.finishedAt = Date()
         saveContext()
-        
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
         
         BackupManager.shared.autoBackup(context: modelContext)
         dismiss()
