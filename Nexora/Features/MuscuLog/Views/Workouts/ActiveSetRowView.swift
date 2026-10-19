@@ -4,8 +4,8 @@ import SwiftData
 struct ActiveSetRowView: View {
     let set: CompletedSet
     let onDelete: () -> Void
-    let onWeightChange: (UUID, Double) -> Void
-    let onRepsChange: (UUID, Int) -> Void
+    let onWeightChange: (Double) -> Void
+    let onRepsChange: (Int) -> Void
 
     // Pour l'interface, on utilise des String pour éviter l'affichage de "0" par défaut au milieu du TextField
     @State private var weightString: String = ""
@@ -31,7 +31,7 @@ struct ActiveSetRowView: View {
                 .onChange(of: weightString) { _, newValue in
                     let filtered = newValue.replacingOccurrences(of: ",", with: ".")
                     if let weight = Double(filtered) {
-                        onWeightChange(set.id, weight)
+                        onWeightChange(weight)
                     }
                 }
 
@@ -50,7 +50,7 @@ struct ActiveSetRowView: View {
                 .frame(width: 60)
                 .onChange(of: repsString) { _, newValue in
                     if let reps = Int(newValue) {
-                        onRepsChange(set.id, reps)
+                        onRepsChange(reps)
                     }
                 }
 
