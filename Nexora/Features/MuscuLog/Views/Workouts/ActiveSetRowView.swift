@@ -28,7 +28,7 @@ struct ActiveSetRowView: View {
                 .multilineTextAlignment(.center)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 70)
-                .onChange(of: weightString) { _, newValue in
+                .onChange(of: weightString) { newValue in
                     let filtered = newValue.replacingOccurrences(of: ",", with: ".")
                     if let weight = Double(filtered) {
                         onWeightChange(weight)
@@ -48,7 +48,7 @@ struct ActiveSetRowView: View {
                 .multilineTextAlignment(.center)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 60)
-                .onChange(of: repsString) { _, newValue in
+                .onChange(of: repsString) { newValue in
                     if let reps = Int(newValue) {
                         onRepsChange(reps)
                     }
