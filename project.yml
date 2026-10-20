@@ -9,12 +9,6 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    UIAlternateIcons:
-      Classic: AppIcon-Classic
-      Gradient: AppIcon-Gradient
-      Minimal: AppIcon-Minimal
-      Bold: AppIcon-Bold
-      Mono: AppIcon-Mono
 
 targets:
   Nexora:

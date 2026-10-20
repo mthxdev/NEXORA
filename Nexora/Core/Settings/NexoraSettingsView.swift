@@ -51,25 +51,10 @@ struct NexoraSettingsView: View {
                 }
             }
             .pickerStyle(.menu)
-            .onChange(of: appLogo) { _, newLogo in
-                if let iconName = newLogo.alternateIconName {
-                    UIApplication.shared.setAlternateIconName(iconName) { error in
-                        if let error = error {
-                            print("Failed to set alternate icon: \(error)")
-                        }
-                    }
-                } else {
-                    UIApplication.shared.setAlternateIconName(nil) { error in
-                        if let error = error {
-                            print("Failed to reset to primary icon: \(error)")
-                        }
-                    }
-                }
-            }
         } header: {
             Text("Logo")
         } footer: {
-            Text("Le logo sélectionné s'affiche dans l'application et change l'icône système (nécessite confirmation iOS).")
+            Text("Le logo sélectionné s'affiche dans l'application et dans À propos.")
         }
     }
     
