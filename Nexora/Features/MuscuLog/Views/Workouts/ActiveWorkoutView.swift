@@ -127,9 +127,9 @@ struct ActiveWorkoutView: View {
                 ActiveSetRowView(
                     set: set,
                     exerciseID: exercise.id,
-                    onDelete: { deleteSet($0, exercise.id) },
-                    onWeightChange: { updateSetWeight($0, $1) },
-                    onRepsChange: { updateSetReps($0, $1) }
+                    onDelete: { set, exerciseID in deleteSet(set, exerciseID: exerciseID) },
+                    onWeightChange: { set, weight in updateSetWeight(set, weight: weight) },
+                    onRepsChange: { set, reps in updateSetReps(set, reps: reps) }
                 )
             }
             Button {

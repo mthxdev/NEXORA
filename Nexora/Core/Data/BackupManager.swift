@@ -35,9 +35,8 @@ enum BackupError: LocalizedError {
     }
 }
 
-@MainActor
 final class BackupManager {
-    nonisolated(unsafe) static let shared = BackupManager()
+    static let shared = BackupManager()
 
     /// Nom du fichier écrit dans le dossier Documents.
     static let backupFileName = "Nexora_Sauvegarde.json"
@@ -63,6 +62,7 @@ final class BackupManager {
 
     /// Construit la sauvegarde complète à partir du contexte SwiftData.
     /// Lève une erreur plutôt que de produire silencieusement un fichier partiel.
+    @MainActor
     func makeBackup(context: ModelContext) throws -> NexoraBackup {
         let programs = try context.fetch(
             FetchDescriptor<Program>(sortBy: [SortDescriptor(\.createdAt, order: .forward)])
@@ -103,6 +103,7 @@ final class BackupManager {
     }
 
     /// Encode et écrit la sauvegarde dans Documents. Retourne l'URL du fichier.
+    @MainActor
     @discardableResult
     func writeBackup(context: ModelContext) throws -> URL {
         let backup = try makeBackup(context: context)
@@ -117,6 +118,7 @@ final class BackupManager {
     /// Écrit dans le dossier Documents de l'application, exposé dans Fichiers
     /// grâce à `UIFileSharingEnabled`. Ce fichier **ne survit pas** à une
     /// désinstallation : ce n'est pas une sauvegarde externe.
+    @MainActor
     @discardableResult
     func autoBackup(context: ModelContext) -> URL? {
         do {
@@ -160,6 +162,7 @@ final class BackupManager {
     /// insertion → enregistrement. Si l'enregistrement échoue, le snapshot
     /// sur disque est utilisé en dernier recours si le snapshot en mémoire
     /// est également inutilisable (par exemple après un crash interne).
+    @MainActor
     @discardableResult
     func restore(from backup: NexoraBackup, context: ModelContext) throws -> RestoreReport {
         // 1. Snapshot en mémoire pour un rollback rapide.
@@ -240,6 +243,7 @@ final class BackupManager {
     }
 
     /// Point d'entrée pratique : restaure depuis un fichier choisi par l'utilisateur.
+    @MainActor
     @discardableResult
     func restore(from url: URL, context: ModelContext) throws -> RestoreReport {
         let needsScope = url.startAccessingSecurityScopedResource()
@@ -266,6 +270,7 @@ final class BackupManager {
     /// Si un fichier de fallback orphelin est présent (créé par une restauration
     /// interrompue), tente de restaurer les données depuis ce fichier.
     /// Nettoie toujours le fichier de fallback, quelle que soit l'issue.
+    @MainActor
     @discardableResult
     func recoverFromFallback(context: ModelContext) -> Bool {
         guard let fallbackURL = try? Self.documentsURL(fileName: Self.restoreFallbackFileName),
@@ -290,6 +295,7 @@ final class BackupManager {
     // MARK: - Suppression
 
     /// Supprime toutes les données de tous les modules.
+    @MainActor
     func deleteAllData(context: ModelContext) throws {
         try context.delete(model: CompletedSet.self)
         try context.delete(model: CompletedExercise.self)

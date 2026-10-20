@@ -2,9 +2,8 @@ import Foundation
 import SwiftUI
 import SwiftData
 
-@MainActor
 final class MealService: ObservableObject {
-    nonisolated(unsafe) static let shared = MealService()
+    static let shared = MealService()
 
     @Published private(set) var recipes: [Recipe] = SampleRecipes.all
     @Published private(set) var favorites: [FavoriteRecipe] = []
@@ -12,6 +11,7 @@ final class MealService: ObservableObject {
 
     private init() {}
 
+    @MainActor
     func setModelContext(_ context: ModelContext) {
         self.modelContext = context
         loadFavorites()
@@ -21,10 +21,12 @@ final class MealService: ObservableObject {
         Set(favorites.map { $0.recipeID })
     }
 
+    @MainActor
     func isFavorite(recipe: Recipe) -> Bool {
         favoriteRecipeIDs.contains(recipe.id.uuidString)
     }
 
+    @MainActor
     func toggleFavorite(recipe: Recipe) {
         guard let context = modelContext else { return }
 
@@ -42,6 +44,7 @@ final class MealService: ObservableObject {
         try? context.save()
     }
 
+    @MainActor
     private func loadFavorites() {
         guard let context = modelContext else { return }
         let descriptor = FetchDescriptor<FavoriteRecipe>()
@@ -92,6 +95,7 @@ final class MealService: ObservableObject {
         return candidates.randomElement()
     }
 
+    @MainActor
     func favoriteRecipes() -> [Recipe] {
         favorites.compactMap { recipe(for: $0.recipeID) }
     }

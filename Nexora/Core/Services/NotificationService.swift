@@ -2,9 +2,8 @@ import Foundation
 import SwiftUI
 import UserNotifications
 
-@MainActor
 final class NotificationService: NSObject, ObservableObject {
-    nonisolated(unsafe) static let shared = NotificationService()
+    static let shared = NotificationService()
 
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = false
     @AppStorage("reminderTime") private var reminderTimeDouble: Double = 8.0 * 3600.0
@@ -19,19 +18,23 @@ final class NotificationService: NSObject, ObservableObject {
         }
     }
 
+    @MainActor
     var isReminderEnabled: Bool { notificationsEnabled }
 
+    @MainActor
     var reminderHour: Int {
         let totalSeconds = Int(reminderTimeDouble)
         return totalSeconds / 3600
     }
 
+    @MainActor
     var reminderMinute: Int {
         let totalSeconds = Int(reminderTimeDouble)
         let remainingSeconds = totalSeconds % 3600
         return remainingSeconds / 60
     }
 
+    @MainActor
     var reminderTime: Date {
         var components = DateComponents()
         components.hour = reminderHour
@@ -39,12 +42,14 @@ final class NotificationService: NSObject, ObservableObject {
         return Calendar.current.date(from: components) ?? Date()
     }
 
+    @MainActor
     func refreshAuthorizationStatus() async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         authorizationStatus = settings.authorizationStatus
     }
 
+    @MainActor
     func requestAuthorization() async -> Bool {
         let center = UNUserNotificationCenter.current()
         let options: UNAuthorizationOptions = [.alert, .sound, .badge]
@@ -53,6 +58,7 @@ final class NotificationService: NSObject, ObservableObject {
         return granted ?? false
     }
 
+    @MainActor
     func enableReminders(hour: Int, minute: Int) async {
         let granted = await requestAuthorization()
         guard granted else { return }
@@ -62,12 +68,14 @@ final class NotificationService: NSObject, ObservableObject {
         notificationsEnabled = true
     }
 
+    @MainActor
     func disableReminders() async {
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
         notificationsEnabled = false
     }
 
+    @MainActor
     private func notificationTimeUpdated(hour: Int, minute: Int) {
         reminderTimeDouble = Double(hour * 3600 + minute * 60)
     }
