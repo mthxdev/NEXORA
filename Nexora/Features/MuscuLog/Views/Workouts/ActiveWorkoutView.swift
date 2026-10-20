@@ -143,7 +143,7 @@ struct ActiveWorkoutView: View {
             .onAppear {
                 startWorkout()
             }
-            .onChange(of: scenePhase) { _, newPhase in
+            .onChange(of: scenePhase) { newPhase in
                 if newPhase != .active {
                     saveContext()
                 }
