@@ -28,65 +28,16 @@ struct ActiveWorkoutView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if let completedWorkout {
-                    List {
-                        ForEach(completedWorkout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })) { exercise in
-                            Section {
-                                ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
-                                    ActiveSetRowView(
-                                        set: set,
-                                        onDelete: { deleteSet(set, exerciseID: exercise.id) },
-                                        onWeightChange: { updateSetWeight(set, weight: $0) },
-                                        onRepsChange: { updateSetReps(set, reps: $0) }
-                                    )
-                                }
-                                Button {
-                                    addSet(to: exercise)
-                                } label: {
-                                    Label("Ajouter une série", systemImage: "plus")
-                                }
-                                Button {
-                                    insertAfterExercise = exercise
-                                    showingAddExercise = true
-                                } label: {
-                                    Label("Ajouter un exercice", systemImage: "plus.square")
-                                }
-                            } header: {
-                                HStack {
-                                    Text(exercise.exerciseName)
-                                        .font(.headline)
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                    Button {
-                                        // Capture needed info BEFORE showing alert
-                                        exerciseToDeleteID = exercise.id.uuidString
-                                        exerciseToDeleteName = exercise.exerciseName
-                                        exerciseToDeleteSetsCount = exercise.sets.count
-                                        showingDeleteExerciseAlert = true
-                                    } label: {
-                                        Image(systemName: "trash")
-                                            .foregroundStyle(.red)
-                                            .font(.subheadline)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
+            mainContent
+                .navigationTitle("En cours")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Annuler", role: .destructive) {
+                            showingCancelAlert = true
                         }
+                        .foregroundStyle(.red)
                     }
-                } else {
-                    ProgressView("Préparation de la séance…")
-                }
-            }
-            .navigationTitle("En cours")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler", role: .destructive) {
-                        showingCancelAlert = true
-                    }
-                    .foregroundStyle(.red)
-                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Terminer") {
                         finishWorkout()
@@ -106,6 +57,48 @@ struct ActiveWorkoutView: View {
             } message: {
                 Text("Entrez le nom du nouvel exercice. Il sera inséré après l'exercice courant.")
             }
+            .alert("Supprimer cet exercice ?", isPresented: $showingDeleteExerciseAlert) {
+                Button("Annuler", role: .cancel) {
+                    exerciseToDeleteID = nil
+                    exerciseToDeleteName = ""
+                    exerciseToDeleteSetsCount = 0
+                }
+                Button("Supprimer", role: .destructive) {
+                    if let idString = exerciseToDeleteID,
+                       let id = UUID(uuidString: idString),
+                       let ex = completedWorkout?.exercises.first(where: { $0.id == id }) {
+                        deleteExercise(ex)
+                    }
+                    exerciseToDeleteID = nil
+                    exerciseToDeleteName = ""
+                    exerciseToDeleteSetsCount = 0
+                }
+            } message: {
+                if !exerciseToDeleteName.isEmpty {
+                    let hasSets = exerciseToDeleteSetsCount > 0
+                    Text(hasSets
+                        ? "L'exercice « \(exerciseToDeleteName) » contient \(exerciseToDeleteSetsCount) série\(exerciseToDeleteSetsCount > 1 ? "s" : ""). La suppression est irréversible."
+                        : "L'exercice « \(exerciseToDeleteName) » ne contient pas de séries. Confirmez la suppression.")
+                }
+            }
+            .alert("Annuler la séance ?", isPresented: $showingCancelAlert) {
+                Button("Continuer l'entraînement", role: .cancel) { }
+                Button("Supprimer et quitter", role: .destructive) {
+                    cancelWorkout()
+                }
+            } message: {
+                Text("Toutes les données de cette séance seront perdues.")
+            }
+            .onAppear {
+                startWorkout()
+            }
+            .onChange(of: scenePhase) { newPhase in
+                if newPhase != .active {
+                    saveContext()
+                }
+            }
+        }
+    }
             .alert("Supprimer cet exercice ?", isPresented: $showingDeleteExerciseAlert) {
                 Button("Annuler", role: .cancel) {
                     exerciseToDeleteID = nil
@@ -150,8 +143,67 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    @MainActor
-    private func getPreviousExercise(name: String) -> CompletedExercise? {
+    @ViewBuilder
+    private var mainContent: some View {
+        Group {
+            if let completedWorkout {
+                exercisesListView(completedWorkout)
+            } else {
+                ProgressView("Préparation de la séance…")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func exercisesListView(_ workout: CompletedWorkout) -> some View {
+        List {
+            ForEach(workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })) { exercise in
+                exerciseSection(exercise)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func exerciseSection(_ exercise: CompletedExercise) -> some View {
+        Section {
+            ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
+                ActiveSetRowView(
+                    set: set,
+                    onDelete: { deleteSet(setID: set.id, exerciseID: exercise.id) },
+                    onWeightChange: { updateSetWeight(setID: set.id, weight: $0) },
+                    onRepsChange: { updateSetReps(setID: set.id, reps: $0) }
+                )
+            }
+            Button {
+                addSet(to: exercise)
+            } label: {
+                Label("Ajouter une série", systemImage: "plus")
+            }
+            Button {
+                insertAfterExercise = exercise
+                showingAddExercise = true
+            } label: {
+                Label("Ajouter un exercice", systemImage: "plus.square")
+            }
+        } header: {
+            HStack {
+                Text(exercise.exerciseName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Button {
+                    exerciseToDeleteID = exercise.id.uuidString
+                    exerciseToDeleteName = exercise.exerciseName
+                    exerciseToDeleteSetsCount = exercise.sets.count
+                    showingDeleteExerciseAlert = true
+                } label: {
+                    Image(systemName: "trash")
+                        .foregroundStyle(.red)
+                        .font(.subheadline)
+                }
+                .buttonStyle(.plain)
+            }
+    }
         let descriptor = FetchDescriptor<CompletedWorkout>(sortBy: [SortDescriptor(\.date, order: .reverse)])
         let allWorkouts = (try? modelContext.fetch(descriptor)) ?? []
         
