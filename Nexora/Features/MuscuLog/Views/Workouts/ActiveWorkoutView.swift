@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct ActiveWorkoutView: View {
     @Environment(\.modelContext) private var modelContext
@@ -141,7 +142,7 @@ struct ActiveWorkoutView: View {
             .onAppear {
                 startWorkout()
             }
-            .onChange(of: scenePhase) { _, newPhase in
+            .onChange(of: scenePhase) { newPhase in
                 if newPhase != .active {
                     saveContext()
                 }

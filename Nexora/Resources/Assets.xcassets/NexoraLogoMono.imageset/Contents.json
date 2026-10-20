@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "NexoraLogoMono.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "NexoraLogoMono@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "NexoraLogoMono@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}
