@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct NexoraSettingsView: View {
     @AppStorage("appearance") private var appearance: AppAppearance = .system
@@ -22,6 +23,26 @@ struct NexoraSettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingAbout) {
                 AboutView(selectedLogo: appLogo)
+            }
+        }
+        .onChange(of: appLogo) { _, newLogo in
+            applyAlternateIcon(newLogo)
+        }
+    }
+    
+    private func applyAlternateIcon(_ logo: AppLogo) {
+        let iconName: String?
+        switch logo {
+        case .classic: iconName = nil  // nil = primary icon
+        case .gradient: iconName = "AppIcon-Gradient"
+        case .minimal: iconName = "AppIcon-Minimal"
+        case .bold: iconName = "AppIcon-Bold"
+        case .mono: iconName = "AppIcon-Mono"
+        }
+        
+        UIApplication.shared.setAlternateIconName(iconName) { error in
+            if let error = error {
+                print("Failed to set alternate icon: \(error)")
             }
         }
     }

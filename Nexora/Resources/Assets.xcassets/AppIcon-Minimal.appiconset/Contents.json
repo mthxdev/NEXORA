@@ -1,0 +1,116 @@
+﻿{
+    "images":  [
+                   {
+                       "Size":  "20x20",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-20@2x.png",
+                       "Idiom":  "iphone"
+                   },
+                   {
+                       "Size":  "20x20",
+                       "Scale":  "3x",
+                       "Filename":  "AppIcon-20@3x.png",
+                       "Idiom":  "iphone"
+                   },
+                   {
+                       "Size":  "29x29",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-29@2x.png",
+                       "Idiom":  "iphone"
+                   },
+                   {
+                       "Size":  "29x29",
+                       "Scale":  "3x",
+                       "Filename":  "AppIcon-29@3x.png",
+                       "Idiom":  "iphone"
+                   },
+                   {
+                       "Size":  "40x40",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-40@2x.png",
+                       "Idiom":  "iphone"
+                   },
+                   {
+                       "Size":  "40x40",
+                       "Scale":  "3x",
+                       "Filename":  "AppIcon-40@3x.png",
+                       "Idiom":  "iphone"
+                   },
+                   {
+                       "Size":  "60x60",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-60@2x.png",
+                       "Idiom":  "iphone"
+                   },
+                   {
+                       "Size":  "60x60",
+                       "Scale":  "3x",
+                       "Filename":  "AppIcon-60@3x.png",
+                       "Idiom":  "iphone"
+                   },
+                   {
+                       "Size":  "20x20",
+                       "Scale":  "1x",
+                       "Filename":  "AppIcon-20~ipad.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "20x20",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-20~ipad@2x.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "29x29",
+                       "Scale":  "1x",
+                       "Filename":  "AppIcon-29@1x.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "29x29",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-29@2x.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "40x40",
+                       "Scale":  "1x",
+                       "Filename":  "AppIcon-40@1x.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "40x40",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-40@2x.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "76x76",
+                       "Scale":  "1x",
+                       "Filename":  "AppIcon-76@1x.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "76x76",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-76@2x.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "83.5x83.5",
+                       "Scale":  "2x",
+                       "Filename":  "AppIcon-83.5@2x.png",
+                       "Idiom":  "ipad"
+                   },
+                   {
+                       "Size":  "1024x1024",
+                       "Scale":  "1x",
+                       "Filename":  "AppIcon-1024.png",
+                       "Idiom":  "ios-marketing"
+                   }
+               ],
+    "info":  {
+                 "author":  "xcode",
+                 "version":  1
+             }
+}
