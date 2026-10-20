@@ -3,7 +3,7 @@ import SwiftData
 
 struct ActiveSetRowView: View {
     let set: CompletedSet
-    let onDelete: () -> Void
+    let onDelete: (UUID) -> Void
     let onWeightChange: (Double) -> Void
     let onRepsChange: (Int) -> Void
 
@@ -70,7 +70,7 @@ struct ActiveSetRowView: View {
         .alert("Supprimer cette série ?", isPresented: $showingDelete) {
             Button("Annuler", role: .cancel) { }
             Button("Supprimer", role: .destructive) {
-                onDelete()
+                onDelete(set.id)
             }
         } message: {
             Text("Cette action est irréversible.")
