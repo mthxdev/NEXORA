@@ -30,10 +30,7 @@ struct ActiveSetRowView: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 70)
                 .onChange(of: weightString) { newValue in
-                    let filtered = newValue.replacingOccurrences(of: ",", with: ".")
-                    if let weight = Double(filtered) {
-                        onWeightChange(set.id, weight)
-                    }
+                    handleWeightChange(newValue)
                 }
 
             Text("kg")
@@ -50,9 +47,7 @@ struct ActiveSetRowView: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 60)
                 .onChange(of: repsString) { newValue in
-                    if let reps = Int(newValue) {
-                        onRepsChange(set.id, reps)
-                    }
+                    handleRepsChange(newValue)
                 }
 
             Text("reps")
@@ -79,6 +74,19 @@ struct ActiveSetRowView: View {
         .onAppear {
             weightString = set.weight > 0 ? String(format: "%g", set.weight) : ""
             repsString = set.reps > 0 ? String(set.reps) : ""
+        }
+    }
+
+    private func handleWeightChange(_ newValue: String) {
+        let filtered = newValue.replacingOccurrences(of: ",", with: ".")
+        if let weight = Double(filtered) {
+            onWeightChange(set.id, weight)
+        }
+    }
+
+    private func handleRepsChange(_ newValue: String) {
+        if let reps = Int(newValue) {
+            onRepsChange(set.id, reps)
         }
     }
 }

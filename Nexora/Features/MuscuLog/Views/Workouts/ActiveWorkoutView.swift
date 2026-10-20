@@ -99,49 +99,6 @@ struct ActiveWorkoutView: View {
             }
         }
     }
-            .alert("Supprimer cet exercice ?", isPresented: $showingDeleteExerciseAlert) {
-                Button("Annuler", role: .cancel) {
-                    exerciseToDeleteID = nil
-                    exerciseToDeleteName = ""
-                    exerciseToDeleteSetsCount = 0
-                }
-                Button("Supprimer", role: .destructive) {
-                    if let idString = exerciseToDeleteID,
-                       let id = UUID(uuidString: idString),
-                       let ex = completedWorkout?.exercises.first(where: { $0.id == id }) {
-                        deleteExercise(ex)
-                    }
-                    exerciseToDeleteID = nil
-                    exerciseToDeleteName = ""
-                    exerciseToDeleteSetsCount = 0
-                }
-            } message: {
-                // Use pre-computed values, no SwiftData object capture
-                if !exerciseToDeleteName.isEmpty {
-                    let hasSets = exerciseToDeleteSetsCount > 0
-                    Text(hasSets
-                        ? "L'exercice « \(exerciseToDeleteName) » contient \(exerciseToDeleteSetsCount) série\(exerciseToDeleteSetsCount > 1 ? "s" : ""). La suppression est irréversible."
-                        : "L'exercice « \(exerciseToDeleteName) » ne contient pas de séries. Confirmez la suppression.")
-                }
-            }
-            .alert("Annuler la séance ?", isPresented: $showingCancelAlert) {
-                Button("Continuer l'entraînement", role: .cancel) { }
-                Button("Supprimer et quitter", role: .destructive) {
-                    cancelWorkout()
-                }
-            } message: {
-                Text("Toutes les données de cette séance seront perdues.")
-            }
-            .onAppear {
-                startWorkout()
-            }
-            .onChange(of: scenePhase) { newPhase in
-                if newPhase != .active {
-                    saveContext()
-                }
-            }
-        }
-    }
 
     @ViewBuilder
     private var mainContent: some View {
@@ -201,10 +158,12 @@ struct ActiveWorkoutView: View {
                     Image(systemName: "trash")
                         .foregroundStyle(.red)
                         .font(.subheadline)
-                }
-                .buttonStyle(.plain)
-            }
+}
+            .buttonStyle(.plain)
+        }
     }
+
+    private func getPreviousExercise(name: String) -> CompletedExercise? {
         let descriptor = FetchDescriptor<CompletedWorkout>(sortBy: [SortDescriptor(\.date, order: .reverse)])
         let allWorkouts = (try? modelContext.fetch(descriptor)) ?? []
         
