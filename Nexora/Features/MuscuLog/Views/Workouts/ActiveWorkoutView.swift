@@ -177,158 +177,147 @@ struct ActiveWorkoutView: View {
         return nil
     }
 
-    @MainActor
     private func startWorkout() {
-        guard completedWorkout == nil else { return }
+        MainActor.assumeIsolated {
+            guard completedWorkout == nil else { return }
 
-        if let existingWorkout {
-            completedWorkout = existingWorkout
-            return
-        }
-
-        let newCompletedWorkout = CompletedWorkout(
-            programName: workoutTemplate.program?.name ?? "Sans programme",
-            workoutName: workoutTemplate.name
-        )
-        modelContext.insert(newCompletedWorkout)
-
-        let sortedTemplates = workoutTemplate.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })
-        
-        for (index, exTemplate) in sortedTemplates.enumerated() {
-            let compEx = CompletedExercise(exerciseName: exTemplate.name, displayOrder: index)
-            compEx.workout = newCompletedWorkout
-            modelContext.insert(compEx)
-
-            let previousEx = getPreviousExercise(name: exTemplate.name)
-
-            for i in 1...exTemplate.targetSets {
-                let prevSet = previousEx?.sets.first(where: { $0.setNumber == i })
-                let weight = prevSet?.weight ?? 0
-                let reps = prevSet?.reps ?? 0
-                
-                let compSet = CompletedSet(weight: weight, reps: reps, setNumber: i)
-                compSet.exercise = compEx
-                modelContext.insert(compSet)
+            if let existingWorkout {
+                completedWorkout = existingWorkout
+                return
             }
-        }
 
-        completedWorkout = newCompletedWorkout
-        saveContext()
+            let newCompletedWorkout = CompletedWorkout(
+                programName: workoutTemplate.program?.name ?? "Sans programme",
+                workoutName: workoutTemplate.name
+            )
+            modelContext.insert(newCompletedWorkout)
+
+            let sortedTemplates = workoutTemplate.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })
+            
+            for (index, exTemplate) in sortedTemplates.enumerated() {
+                let compEx = CompletedExercise(exerciseName: exTemplate.name, displayOrder: index)
+                compEx.workout = newCompletedWorkout
+                modelContext.insert(compEx)
+
+                let previousEx = getPreviousExercise(name: exTemplate.name)
+
+                for i in 1...exTemplate.targetSets {
+                    let prevSet = previousEx?.sets.first(where: { $0.setNumber == i })
+                    let weight = prevSet?.weight ?? 0
+                    let reps = prevSet?.reps ?? 0
+                    
+                    let compSet = CompletedSet(weight: weight, reps: reps, setNumber: i)
+                    compSet.exercise = compEx
+                    modelContext.insert(compSet)
+                }
+            }
+
+            completedWorkout = newCompletedWorkout
+            saveContext()
+        }
     }
 
-    @MainActor
     private func addSet(to exercise: CompletedExercise) {
-        let nextSetNumber = (exercise.sets.map(\.setNumber).max() ?? 0) + 1
-        let newSet = CompletedSet(weight: 0, reps: 0, setNumber: nextSetNumber)
-        newSet.exercise = exercise
-        modelContext.insert(newSet)
-        saveContext()
-    }
-
-    @MainActor
-    private func updateSetWeight(_ set: CompletedSet, weight: Double) {
-        set.weight = weight
-        saveContext()
-    }
-
-    @MainActor
-    private func updateSetReps(_ set: CompletedSet, reps: Int) {
-        set.reps = reps
-        saveContext()
-    }
-
-    @MainActor
-    private func addExerciseAfterCurrent() {
-        guard let workout = completedWorkout,
-              let afterExercise = insertAfterExercise,
-              !newExerciseName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-
-        let sortedExercises = workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })
-        let newDisplayOrder = afterExercise.displayOrder + 1
-
-        let newExercise = CompletedExercise(
-            exerciseName: newExerciseName.trimmingCharacters(in: .whitespaces),
-            displayOrder: newDisplayOrder
-        )
-        newExercise.workout = workout
-        modelContext.insert(newExercise)
-
-        for exercise in sortedExercises where exercise.displayOrder >= newDisplayOrder && exercise.id != afterExercise.id {
-            exercise.displayOrder += 1
-        }
-
-        for i in 1...newExerciseTargetSets {
-            let newSet = CompletedSet(weight: 0, reps: 0, setNumber: i)
-            newSet.exercise = newExercise
+        MainActor.assumeIsolated {
+            let nextSetNumber = (exercise.sets.map(\.setNumber).max() ?? 0) + 1
+            let newSet = CompletedSet(weight: 0, reps: 0, setNumber: nextSetNumber)
+            newSet.exercise = exercise
             modelContext.insert(newSet)
+            saveContext()
         }
-
-        saveContext()
     }
 
-    @MainActor
+    private func updateSetWeight(_ set: CompletedSet, weight: Double) {
+        MainActor.assumeIsolated {
+            set.weight = weight
+            saveContext()
+        }
+    }
+
+    private func updateSetReps(_ set: CompletedSet, reps: Int) {
+        MainActor.assumeIsolated {
+            set.reps = reps
+            saveContext()
+        }
+    }
+
+    private func addExerciseAfterCurrent() {
+        MainActor.assumeIsolated {
+            guard let workout = completedWorkout,
+                  let afterExercise = insertAfterExercise,
+                  !newExerciseName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+
+            let sortedExercises = workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })
+            let newDisplayOrder = afterExercise.displayOrder + 1
+
+            let newExercise = CompletedExercise(
+                exerciseName: newExerciseName.trimmingCharacters(in: .whitespaces),
+                displayOrder: newDisplayOrder
+            )
+            newExercise.workout = workout
+            modelContext.insert(newExercise)
+
+            for exercise in sortedExercises where exercise.displayOrder >= newDisplayOrder && exercise.id != afterExercise.id {
+                exercise.displayOrder += 1
+            }
+
+            for i in 1...newExerciseTargetSets {
+                let newSet = CompletedSet(weight: 0, reps: 0, setNumber: i)
+                newSet.exercise = newExercise
+                modelContext.insert(newSet)
+            }
+
+            saveContext()
+        }
+    }
+
     private func saveContext() {
-        do {
-            try modelContext.save()
-        } catch {
-            print("Impossible de sauvegarder la séance : \(error.localizedDescription)")
+        MainActor.assumeIsolated {
+            do {
+                try modelContext.save()
+            } catch {
+                print("Impossible de sauvegarder la séance : \(error.localizedDescription)")
+            }
         }
     }
 
-    @MainActor
-    private func deleteSet(_ set: CompletedSet, exerciseID: UUID) {
-        guard let workout = completedWorkout else { return }
-        if let exercise = workout.exercises.first(where: { $0.id == exerciseID }) {
-            // Capture les séries à renuméroter AVANT de supprimer (évite d'accéder à une relation SwiftData invalide)
-            let setsToRenumber = exercise.sets
-                .filter { $0.id != set.id }
-                .sorted(by: { $0.setNumber < $1.setNumber })
+    private func deleteExercise(_ exercise: CompletedExercise) {
+        MainActor.assumeIsolated {
+            guard let workout = completedWorkout else { return }
             
-            modelContext.delete(set)
+            // Supprimer l'exercice (les séries en cascade via @Relationship)
+            modelContext.delete(exercise)
             
-            // Renuméroter à partir de la liste capturée
-            for (index, s) in setsToRenumber.enumerated() {
-                s.setNumber = index + 1
+            // Réorganiser l'ordre des exercices restants
+            let sortedExercises = workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })
+            for (index, ex) in sortedExercises.enumerated() {
+                ex.displayOrder = index
             }
             
             saveContext()
         }
     }
 
-    @MainActor
-    private func deleteExercise(_ exercise: CompletedExercise) {
-        guard let workout = completedWorkout else { return }
-        
-        // Supprimer l'exercice (les séries en cascade via @Relationship)
-        modelContext.delete(exercise)
-        
-        // Réorganiser l'ordre des exercices restants
-        let sortedExercises = workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })
-        for (index, ex) in sortedExercises.enumerated() {
-            ex.displayOrder = index
-        }
-        
-        saveContext()
-    }
-
-    @MainActor
     private func finishWorkout() {
-        completedWorkout?.finishedAt = Date()
-        saveContext()
-        
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-        
-        BackupManager.shared.autoBackup(context: modelContext)
-        dismiss()
+        MainActor.assumeIsolated {
+            completedWorkout?.finishedAt = Date()
+            saveContext()
+            
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+            
+            BackupManager.shared.autoBackup(context: modelContext)
+            dismiss()
+        }
     }
 
-    @MainActor
     private func cancelWorkout() {
-        if let completedWorkout {
-            modelContext.delete(completedWorkout)
-            saveContext()
+        MainActor.assumeIsolated {
+            if let completedWorkout {
+                modelContext.delete(completedWorkout)
+                saveContext()
+            }
+            dismiss()
         }
-        dismiss()
     }
 }
