@@ -9,7 +9,7 @@ struct NotificationSettingsView: View {
         Form {
             Section {
                 Toggle("Rappel d'entraînement", isOn: $isEnabled)
-                    .onChange(of: isEnabled) { newValue in
+                    .onChange(of: isEnabled) { _, newValue in
                         Task {
                             await handleToggle(newValue)
                         }

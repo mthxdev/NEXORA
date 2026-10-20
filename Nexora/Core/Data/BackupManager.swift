@@ -37,7 +37,7 @@ enum BackupError: LocalizedError {
 
 @MainActor
 final class BackupManager {
-    static let shared = BackupManager()
+    nonisolated(unsafe) static let shared = BackupManager()
 
     /// Nom du fichier écrit dans le dossier Documents.
     static let backupFileName = "Nexora_Sauvegarde.json"

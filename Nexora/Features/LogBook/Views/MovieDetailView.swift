@@ -200,7 +200,7 @@ struct RatingDisplay: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: NexoraSpacing.xs) {
-            if let rating {
+            if rating != nil {
                 Text("Note personnelle")
                     .font(NexoraTypography.caption)
                     .foregroundStyle(NexoraColors.secondaryLabel)

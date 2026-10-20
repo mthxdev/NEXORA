@@ -92,7 +92,7 @@ struct ActiveWorkoutView: View {
             .onAppear {
                 startWorkout()
             }
-            .onChange(of: scenePhase) { newPhase in
+            .onChange(of: scenePhase) { _, newPhase in
                 if newPhase != .active {
                     saveContext()
                 }
@@ -164,6 +164,7 @@ struct ActiveWorkoutView: View {
         }
     }
 
+    @MainActor
     private func getPreviousExercise(name: String) -> CompletedExercise? {
         let descriptor = FetchDescriptor<CompletedWorkout>(sortBy: [SortDescriptor(\.date, order: .reverse)])
         let allWorkouts = (try? modelContext.fetch(descriptor)) ?? []

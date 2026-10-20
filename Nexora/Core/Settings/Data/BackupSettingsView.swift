@@ -161,6 +161,7 @@ struct BackupSettingsView: View {
         }
     }
 
+    @MainActor
     private func handleImportSelection(_ result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
