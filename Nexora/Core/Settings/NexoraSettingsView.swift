@@ -54,7 +54,7 @@ struct NexoraSettingsView: View {
         } header: {
             Text("Logo")
         } footer: {
-            Text("Le logo sélectionné s'affiche sur l'écran d'accueil et dans À propos.")
+            Text("Le logo sélectionné s'affiche dans l'application et dans À propos.")
         }
     }
     

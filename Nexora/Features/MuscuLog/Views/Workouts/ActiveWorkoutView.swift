@@ -1,5 +1,7 @@
 import SwiftUI
 import SwiftData
+import UIKit
+import UIKit
 
 struct ActiveWorkoutView: View {
     @Environment(\.modelContext) private var modelContext
@@ -35,9 +37,9 @@ struct ActiveWorkoutView: View {
                                 ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
                                     ActiveSetRowView(
                                         set: set,
-                                        onDelete: { deleteSet(set, exerciseID: exercise.id) },
-                                        onWeightChange: { updateSetWeight(set, weight: $0) },
-                                        onRepsChange: { updateSetReps(set, reps: $0) }
+                                        onDelete: { setID in deleteSet(setID: setID, exerciseID: exercise.id) },
+                                        onWeightChange: { updateSetWeight(setID: set.id, weight: $0) },
+                                        onRepsChange: { updateSetReps(setID: set.id, reps: $0) }
                                     )
                                 }
                                 Button {
@@ -211,15 +213,44 @@ struct ActiveWorkoutView: View {
     }
 
     @MainActor
-    private func updateSetWeight(_ set: CompletedSet, weight: Double) {
-        set.weight = weight
-        saveContext()
+    private func updateSetWeight(_ setID: UUID, weight: Double) {
+        guard let workout = completedWorkout else { return }
+        if let exercise = workout.exercises.first(where: { $0.sets.contains(where: { $0.id == setID }) }),
+           let set = exercise.sets.first(where: { $0.id == setID }) {
+            set.weight = weight
+            saveContext()
+        }
     }
 
     @MainActor
-    private func updateSetReps(_ set: CompletedSet, reps: Int) {
-        set.reps = reps
-        saveContext()
+    private func updateSetReps(_ setID: UUID, reps: Int) {
+        guard let workout = completedWorkout else { return }
+        if let exercise = workout.exercises.first(where: { $0.sets.contains(where: { $0.id == setID }) }),
+           let set = exercise.sets.first(where: { $0.id == setID }) {
+            set.reps = reps
+            saveContext()
+        }
+    }
+
+    @MainActor
+    private func deleteSet(_ setID: UUID, exerciseID: UUID) {
+        guard let workout = completedWorkout else { return }
+        if let exercise = workout.exercises.first(where: { $0.id == exerciseID }),
+           let set = exercise.sets.first(where: { $0.id == setID }) {
+            // Capture les séries à renuméroter AVANT de supprimer (évite d'accéder à une relation SwiftData invalide)
+            let setsToRenumber = exercise.sets
+                .filter { $0.id != setID }
+                .sorted(by: { $0.setNumber < $1.setNumber })
+            
+            modelContext.delete(set)
+            
+            // Renuméroter à partir de la liste capturée
+            for (index, s) in setsToRenumber.enumerated() {
+                s.setNumber = index + 1
+            }
+            
+            saveContext()
+        }
     }
 
     @MainActor
@@ -261,12 +292,13 @@ struct ActiveWorkoutView: View {
     }
 
     @MainActor
-    private func deleteSet(_ set: CompletedSet, exerciseID: UUID) {
+    private func deleteSet(_ setID: UUID, exerciseID: UUID) {
         guard let workout = completedWorkout else { return }
-        if let exercise = workout.exercises.first(where: { $0.id == exerciseID }) {
+        if let exercise = workout.exercises.first(where: { $0.id == exerciseID }),
+           let set = exercise.sets.first(where: { $0.id == setID }) {
             // Capture les séries à renuméroter AVANT de supprimer (évite d'accéder à une relation SwiftData invalide)
             let setsToRenumber = exercise.sets
-                .filter { $0.id != set.id }
+                .filter { $0.id != setID }
                 .sorted(by: { $0.setNumber < $1.setNumber })
             
             modelContext.delete(set)
