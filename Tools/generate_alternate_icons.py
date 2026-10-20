@@ -48,11 +48,16 @@ for src_file, alt_name in mapping.items():
     src_path = os.path.join(r'C:\Dev\_Mathieu\02_Projets\Perso\Nexora\Tools\logo-references', src_file)
     img = Image.open(src_path)
     
+    # Convert to RGBA first if needed
     if img.mode != 'RGBA':
         img = img.convert('RGBA')
     
-    # Create a white background version for app icons (iOS requires opaque icons)
-    # But for alternative icons, we can keep transparency
+    # For app icons (including alternative icons), iOS requires OPAQUE images (no alpha channel)
+    # Create white background and paste with alpha mask
+    background = Image.new('RGB', img.size, (255, 255, 255))
+    background.paste(img, mask=img.split()[3])  # Use alpha as mask
+    img = background
+    
     for size_str, idiom, scale in ICON_SIZES:
         size = int(float(size_str))
         if scale == "1x":
