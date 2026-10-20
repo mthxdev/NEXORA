@@ -127,9 +127,9 @@ struct ActiveWorkoutView: View {
                 ActiveSetRowView(
                     set: set,
                     exerciseID: exercise.id,
-                    onDelete: { deleteSet(setID: set.id, exerciseID: exercise.id) },
-                    onWeightChange: { updateSetWeight(setID: set.id, weight: $0) },
-                    onRepsChange: { updateSetReps(setID: set.id, reps: $0) }
+                    onDelete: { deleteSet($0, exercise.id) },
+                    onWeightChange: { updateSetWeight($0, $1) },
+                    onRepsChange: { updateSetReps($0, $1) }
                 )
             }
             Button {
@@ -158,8 +158,9 @@ struct ActiveWorkoutView: View {
                     Image(systemName: "trash")
                         .foregroundStyle(.red)
                         .font(.subheadline)
-}
-            .buttonStyle(.plain)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
