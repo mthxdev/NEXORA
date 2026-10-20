@@ -9,6 +9,12 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.10"
+    UIAlternateIcons:
+      Classic: Classic
+      Gradient: Gradient
+      Minimal: Minimal
+      Bold: Bold
+      Mono: Mono
 
 targets:
   Nexora:

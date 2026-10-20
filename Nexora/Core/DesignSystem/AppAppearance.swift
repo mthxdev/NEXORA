@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum AppAppearance: String, CaseIterable {
     case system = "Système"
@@ -38,6 +39,16 @@ enum AppLogo: String, CaseIterable {
         case .minimal: return "NexoraLogoMinimal"
         case .bold: return "NexoraLogoBold"
         case .mono: return "NexoraLogoMono"
+        }
+    }
+
+    var alternateIconName: String? {
+        switch self {
+        case .classic: return nil  // nil means primary icon
+        case .gradient: return "Gradient"
+        case .minimal: return "Minimal"
+        case .bold: return "Bold"
+        case .mono: return "Mono"
         }
     }
 
