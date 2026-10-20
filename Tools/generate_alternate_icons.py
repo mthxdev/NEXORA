@@ -11,25 +11,16 @@ mapping = {
     '05_N_circulaire.png': 'Mono',
 }
 
-# All required icon sizes for iOS app icons (including iPad and marketing)
+# Only iPhone sizes (since TARGETED_DEVICE_FAMILY = 1)
 ICON_SIZES = [
-    ("20", "ipad", "1x"),
-    ("20", "ipad", "2x"),
     ("20", "iphone", "2x"),
     ("20", "iphone", "3x"),
-    ("29", "ipad", "1x"),
-    ("29", "ipad", "2x"),
     ("29", "iphone", "2x"),
     ("29", "iphone", "3x"),
-    ("40", "ipad", "1x"),
-    ("40", "ipad", "2x"),
     ("40", "iphone", "2x"),
     ("40", "iphone", "3x"),
     ("60", "iphone", "2x"),
     ("60", "iphone", "3x"),
-    ("76", "ipad", "1x"),
-    ("76", "ipad", "2x"),
-    ("83.5", "ipad", "2x"),
     ("1024", "ios-marketing", "1x"),
 ]
 
@@ -40,6 +31,9 @@ dst_dir = r'C:\Dev\_Mathieu\02_Projets\Perso\Nexora\Nexora\Resources\Assets.xcas
 contents_path = os.path.join(dst_dir, 'Contents.json')
 with open(contents_path, 'r') as f:
     contents = json.load(f)
+
+# Remove existing alternative icon entries
+contents['images'] = [img for img in contents['images'] if not img['filename'].startswith('AppIcon-Classic') and not img['filename'].startswith('AppIcon-Gradient') and not img['filename'].startswith('AppIcon-Minimal') and not img['filename'].startswith('AppIcon-Bold') and not img['filename'].startswith('AppIcon-Mono')]
 
 # Track existing filenames to avoid duplicates
 existing_files = {img['filename'] for img in contents['images']}
@@ -52,10 +46,10 @@ for src_file, alt_name in mapping.items():
     if img.mode != 'RGBA':
         img = img.convert('RGBA')
     
-    # For app icons (including alternative icons), iOS requires OPAQUE images (no alpha channel)
+    # For app icons, iOS requires OPAQUE images (no alpha channel)
     # Create white background and paste with alpha mask
     background = Image.new('RGB', img.size, (255, 255, 255))
-    background.paste(img, mask=img.split()[3])  # Use alpha as mask
+    background.paste(img, mask=img.split()[3])
     img = background
     
     for size_str, idiom, scale in ICON_SIZES:
@@ -76,8 +70,7 @@ for src_file, alt_name in mapping.items():
         resized.save(dst_file, 'PNG', optimize=True)
         print(f'Created {filename} ({size}x{size})')
         
-        # Determine idiom for JSON
-        json_idiom = "ipad" if idiom == "ipad" else ("iphone" if idiom == "iphone" else "ios-marketing")
+        json_idiom = "iphone" if idiom == "iphone" else "ios-marketing"
         
         contents['images'].append({
             "filename": filename,
