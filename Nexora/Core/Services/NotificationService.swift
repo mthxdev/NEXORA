@@ -4,7 +4,7 @@ import UserNotifications
 
 @MainActor
 final class NotificationService: NSObject, ObservableObject {
-    static let shared = NotificationService()
+    nonisolated(unsafe) static let shared = NotificationService()
 
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = false
     @AppStorage("reminderTime") private var reminderTimeDouble: Double = 8.0 * 3600.0

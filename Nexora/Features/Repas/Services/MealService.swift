@@ -2,8 +2,9 @@ import Foundation
 import SwiftUI
 import SwiftData
 
+@MainActor
 final class MealService: ObservableObject {
-    static let shared = MealService()
+    nonisolated(unsafe) static let shared = MealService()
 
     @Published private(set) var recipes: [Recipe] = SampleRecipes.all
     @Published private(set) var favorites: [FavoriteRecipe] = []
