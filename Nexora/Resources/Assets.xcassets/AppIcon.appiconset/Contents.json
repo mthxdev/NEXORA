@@ -118,13 +118,13 @@
       "filename": "AppIcon-Classic-20@2x.png",
       "idiom": "ipad",
       "size": "20x20",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Classic-20@3x.png",
       "idiom": "iphone",
       "size": "20x20",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Classic-29.png",
@@ -136,13 +136,13 @@
       "filename": "AppIcon-Classic-29@2x.png",
       "idiom": "ipad",
       "size": "29x29",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Classic-29@3x.png",
       "idiom": "iphone",
       "size": "29x29",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Classic-40.png",
@@ -154,25 +154,25 @@
       "filename": "AppIcon-Classic-40@2x.png",
       "idiom": "ipad",
       "size": "40x40",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Classic-40@3x.png",
       "idiom": "iphone",
       "size": "40x40",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Classic-60@2x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Classic-60@3x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Classic-76.png",
@@ -184,13 +184,13 @@
       "filename": "AppIcon-Classic-76@2x.png",
       "idiom": "ipad",
       "size": "76x76",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Classic-83.5@2x.png",
       "idiom": "ipad",
       "size": "83.5x83.5",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Classic-1024.png",
@@ -208,13 +208,13 @@
       "filename": "AppIcon-Gradient-20@2x.png",
       "idiom": "ipad",
       "size": "20x20",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Gradient-20@3x.png",
       "idiom": "iphone",
       "size": "20x20",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Gradient-29.png",
@@ -226,13 +226,13 @@
       "filename": "AppIcon-Gradient-29@2x.png",
       "idiom": "ipad",
       "size": "29x29",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Gradient-29@3x.png",
       "idiom": "iphone",
       "size": "29x29",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Gradient-40.png",
@@ -244,25 +244,25 @@
       "filename": "AppIcon-Gradient-40@2x.png",
       "idiom": "ipad",
       "size": "40x40",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Gradient-40@3x.png",
       "idiom": "iphone",
       "size": "40x40",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Gradient-60@2x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Gradient-60@3x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Gradient-76.png",
@@ -274,13 +274,13 @@
       "filename": "AppIcon-Gradient-76@2x.png",
       "idiom": "ipad",
       "size": "76x76",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Gradient-83.5@2x.png",
       "idiom": "ipad",
       "size": "83.5x83.5",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Gradient-1024.png",
@@ -298,13 +298,13 @@
       "filename": "AppIcon-Minimal-20@2x.png",
       "idiom": "ipad",
       "size": "20x20",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Minimal-20@3x.png",
       "idiom": "iphone",
       "size": "20x20",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Minimal-29.png",
@@ -316,13 +316,13 @@
       "filename": "AppIcon-Minimal-29@2x.png",
       "idiom": "ipad",
       "size": "29x29",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Minimal-29@3x.png",
       "idiom": "iphone",
       "size": "29x29",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Minimal-40.png",
@@ -334,25 +334,25 @@
       "filename": "AppIcon-Minimal-40@2x.png",
       "idiom": "ipad",
       "size": "40x40",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Minimal-40@3x.png",
       "idiom": "iphone",
       "size": "40x40",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Minimal-60@2x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Minimal-60@3x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Minimal-76.png",
@@ -364,13 +364,13 @@
       "filename": "AppIcon-Minimal-76@2x.png",
       "idiom": "ipad",
       "size": "76x76",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Minimal-83.5@2x.png",
       "idiom": "ipad",
       "size": "83.5x83.5",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Minimal-1024.png",
@@ -388,13 +388,13 @@
       "filename": "AppIcon-Bold-20@2x.png",
       "idiom": "ipad",
       "size": "20x20",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Bold-20@3x.png",
       "idiom": "iphone",
       "size": "20x20",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Bold-29.png",
@@ -406,13 +406,13 @@
       "filename": "AppIcon-Bold-29@2x.png",
       "idiom": "ipad",
       "size": "29x29",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Bold-29@3x.png",
       "idiom": "iphone",
       "size": "29x29",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Bold-40.png",
@@ -424,25 +424,25 @@
       "filename": "AppIcon-Bold-40@2x.png",
       "idiom": "ipad",
       "size": "40x40",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Bold-40@3x.png",
       "idiom": "iphone",
       "size": "40x40",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Bold-60@2x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Bold-60@3x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Bold-76.png",
@@ -454,13 +454,13 @@
       "filename": "AppIcon-Bold-76@2x.png",
       "idiom": "ipad",
       "size": "76x76",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Bold-83.5@2x.png",
       "idiom": "ipad",
       "size": "83.5x83.5",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Bold-1024.png",
@@ -478,13 +478,13 @@
       "filename": "AppIcon-Mono-20@2x.png",
       "idiom": "ipad",
       "size": "20x20",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Mono-20@3x.png",
       "idiom": "iphone",
       "size": "20x20",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Mono-29.png",
@@ -496,13 +496,13 @@
       "filename": "AppIcon-Mono-29@2x.png",
       "idiom": "ipad",
       "size": "29x29",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Mono-29@3x.png",
       "idiom": "iphone",
       "size": "29x29",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Mono-40.png",
@@ -514,25 +514,25 @@
       "filename": "AppIcon-Mono-40@2x.png",
       "idiom": "ipad",
       "size": "40x40",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Mono-40@3x.png",
       "idiom": "iphone",
       "size": "40x40",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Mono-60@2x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Mono-60@3x.png",
       "idiom": "iphone",
       "size": "60x60",
-      "scale": "3xx"
+      "scale": "3x"
     },
     {
       "filename": "AppIcon-Mono-76.png",
@@ -544,13 +544,13 @@
       "filename": "AppIcon-Mono-76@2x.png",
       "idiom": "ipad",
       "size": "76x76",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Mono-83.5@2x.png",
       "idiom": "ipad",
       "size": "83.5x83.5",
-      "scale": "2xx"
+      "scale": "2x"
     },
     {
       "filename": "AppIcon-Mono-1024.png",
