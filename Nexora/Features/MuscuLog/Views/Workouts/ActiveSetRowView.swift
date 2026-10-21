@@ -4,9 +4,9 @@ import SwiftData
 struct ActiveSetRowView: View {
     let set: CompletedSet
     let exerciseID: UUID
-    let onDelete: (CompletedSet, UUID) -> Void
-    let onWeightChange: (CompletedSet, Double) -> Void
-    let onRepsChange: (CompletedSet, Int) -> Void
+    let onDelete: (UUID) -> Void
+    let onWeightChange: (UUID, Double) -> Void
+    let onRepsChange: (UUID, Int) -> Void
 
     // Pour l'interface, on utilise des String pour éviter l'affichage de "0" par défaut au milieu du TextField
     @State private var weightString: String = ""
@@ -66,7 +66,7 @@ struct ActiveSetRowView: View {
         .alert("Supprimer cette série ?", isPresented: $showingDelete) {
             Button("Annuler", role: .cancel) { }
             Button("Supprimer", role: .destructive) {
-                onDelete(set, exerciseID)
+                onDelete(set.id)
             }
         } message: {
             Text("Cette action est irréversible.")
@@ -80,13 +80,13 @@ struct ActiveSetRowView: View {
     private func handleWeightChange(_ newValue: String) {
         let filtered = newValue.replacingOccurrences(of: ",", with: ".")
         if let weight = Double(filtered) {
-            onWeightChange(set, weight)
+            onWeightChange(set.id, weight)
         }
     }
 
     private func handleRepsChange(_ newValue: String) {
         if let reps = Int(newValue) {
-            onRepsChange(set, reps)
+            onRepsChange(set.id, reps)
         }
     }
 }

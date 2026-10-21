@@ -127,9 +127,9 @@ struct ActiveWorkoutView: View {
                 ActiveSetRowView(
                     set: set,
                     exerciseID: exercise.id,
-                    onDelete: { set, exerciseID in deleteSet(set, exerciseID: exerciseID) },
-                    onWeightChange: { set, weight in updateSetWeight(set, weight: weight) },
-                    onRepsChange: { set, reps in updateSetReps(set, reps: reps) }
+                    onDelete: { setID in deleteSet(setID: setID, exerciseID: exercise.id) },
+                    onWeightChange: { setID, weight in updateSetWeight(setID: setID, weight: weight) },
+                    onRepsChange: { setID, reps in updateSetReps(setID: setID, reps: reps) }
                 )
             }
             Button {
@@ -227,17 +227,25 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    private func updateSetWeight(_ set: CompletedSet, weight: Double) {
+    private func updateSetWeight(_ setID: UUID, weight: Double) {
         MainActor.assumeIsolated {
-            set.weight = weight
-            saveContext()
+            guard let workout = completedWorkout else { return }
+            if let exercise = workout.exercises.first(where: { $0.sets.contains(where: { $0.id == setID }) }),
+               let set = exercise.sets.first(where: { $0.id == setID }) {
+                set.weight = weight
+                saveContext()
+            }
         }
     }
 
-    private func updateSetReps(_ set: CompletedSet, reps: Int) {
+    private func updateSetReps(_ setID: UUID, reps: Int) {
         MainActor.assumeIsolated {
-            set.reps = reps
-            saveContext()
+            guard let workout = completedWorkout else { return }
+            if let exercise = workout.exercises.first(where: { $0.sets.contains(where: { $0.id == setID }) }),
+               let set = exercise.sets.first(where: { $0.id == setID }) {
+                set.reps = reps
+                saveContext()
+            }
         }
     }
 
@@ -281,13 +289,14 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    private func deleteSet(_ set: CompletedSet, exerciseID: UUID) {
+    private func deleteSet(_ setID: UUID, exerciseID: UUID) {
         MainActor.assumeIsolated {
             guard let workout = completedWorkout else { return }
-            if let exercise = workout.exercises.first(where: { $0.id == exerciseID }) {
+            if let exercise = workout.exercises.first(where: { $0.id == exerciseID }),
+               let set = exercise.sets.first(where: { $0.id == setID }) {
                 // Capture les séries à renuméroter AVANT de supprimer (évite d'accéder à une relation SwiftData invalide)
                 let setsToRenumber = exercise.sets
-                    .filter { $0.id != set.id }
+                    .filter { $0.id != setID }
                     .sorted(by: { $0.setNumber < $1.setNumber })
                 
                 modelContext.delete(set)
