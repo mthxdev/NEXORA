@@ -125,7 +125,10 @@ struct ActiveWorkoutView: View {
         Section {
             ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
                 ActiveSetRowView(
-                    set: set,
+                    setID: set.id,
+                    setNumber: set.setNumber,
+                    weight: set.weight,
+                    reps: set.reps,
                     exerciseID: exercise.id,
                     onDelete: { deleteSet($0, exerciseID: exercise.id) },
                     onWeightChange: { updateSetWeight($0, weight: $1) },

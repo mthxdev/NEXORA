@@ -1,8 +1,10 @@
 import SwiftUI
-import SwiftData
 
 struct ActiveSetRowView: View {
-    let set: CompletedSet
+    let setID: UUID
+    let setNumber: Int
+    let weight: Double
+    let reps: Int
     let exerciseID: UUID
     let onDelete: (UUID) -> Void
     let onWeightChange: (UUID, Double) -> Void
@@ -15,7 +17,7 @@ struct ActiveSetRowView: View {
 
     var body: some View {
         HStack {
-            Text("\(set.setNumber)")
+            Text("\(setNumber)")
                 .font(.subheadline)
                 .bold()
                 .frame(width: 30, alignment: .leading)
@@ -66,27 +68,27 @@ struct ActiveSetRowView: View {
         .alert("Supprimer cette série ?", isPresented: $showingDelete) {
             Button("Annuler", role: .cancel) { }
             Button("Supprimer", role: .destructive) {
-                onDelete(set.id)
+                onDelete(setID)
             }
         } message: {
             Text("Cette action est irréversible.")
         }
         .onAppear {
-            weightString = set.weight > 0 ? String(format: "%g", set.weight) : ""
-            repsString = set.reps > 0 ? String(set.reps) : ""
+            weightString = weight > 0 ? String(format: "%g", weight) : ""
+            repsString = reps > 0 ? String(reps) : ""
         }
     }
 
     private func handleWeightChange(_ newValue: String) {
         let filtered = newValue.replacingOccurrences(of: ",", with: ".")
         if let weight = Double(filtered) {
-            onWeightChange(set.id, weight)
+            onWeightChange(setID, weight)
         }
     }
 
     private func handleRepsChange(_ newValue: String) {
         if let reps = Int(newValue) {
-            onRepsChange(set.id, reps)
+            onRepsChange(setID, reps)
         }
     }
 }
