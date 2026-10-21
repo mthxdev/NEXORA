@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class WorkoutTemplate {
+final class WorkoutTemplate: Identifiable {
     var id: UUID
     var name: String
     var displayOrder: Int

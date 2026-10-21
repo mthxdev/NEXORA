@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Program {
+final class Program: Identifiable {
     var id: UUID
     var name: String
     var createdAt: Date

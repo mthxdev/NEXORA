@@ -30,9 +30,9 @@ struct HistoryDetailView: View {
                 Text("Aucun exercice enregistré.")
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })) { exercise in
+                ForEach(workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder }), id: \.id) { exercise in
                     Section {
-                        ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
+                        ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
                             HStack {
                                 Text("Série \(set.setNumber)")
                                     .foregroundStyle(.secondary)

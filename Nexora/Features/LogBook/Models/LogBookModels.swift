@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class MovieEntry {
+final class MovieEntry: Identifiable {
     var id: UUID
     var title: String
     var movieDescription: String
@@ -44,7 +44,7 @@ final class MovieEntry {
 }
 
 @Model
-final class SeriesEntry {
+final class SeriesEntry: Identifiable {
     var id: UUID
     var title: String
     var seriesDescription: String
@@ -104,7 +104,7 @@ final class SeriesEntry {
 }
 
 @Model
-final class AnimeEntry {
+final class AnimeEntry: Identifiable {
     var id: UUID
     var title: String
     var animeDescription: String
@@ -167,7 +167,7 @@ final class AnimeEntry {
 }
 
 @Model
-final class GameEntry {
+final class GameEntry: Identifiable {
     var id: UUID
     var title: String
     var gameDescription: String
@@ -215,7 +215,7 @@ final class GameEntry {
 }
 
 @Model
-final class ProjectEntry {
+final class ProjectEntry: Identifiable {
     var id: UUID
     var name: String
     var projectDescription: String
@@ -254,7 +254,7 @@ final class ProjectEntry {
 }
 
 @Model
-final class LearningEntry {
+final class LearningEntry: Identifiable {
     var id: UUID
     var name: String
     var learningDescription: String

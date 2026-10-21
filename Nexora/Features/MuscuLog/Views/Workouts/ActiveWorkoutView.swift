@@ -114,7 +114,7 @@ struct ActiveWorkoutView: View {
     @ViewBuilder
     private func exercisesListView(_ workout: CompletedWorkout) -> some View {
         List {
-            ForEach(workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder })) { exercise in
+            ForEach(workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder }), id: \.id) { exercise in
                 exerciseSection(exercise)
             }
         }
@@ -123,7 +123,7 @@ struct ActiveWorkoutView: View {
     @ViewBuilder
     private func exerciseSection(_ exercise: CompletedExercise) -> some View {
         Section {
-            ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber })) { set in
+            ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
                 ActiveSetRowView(
                     setID: set.id,
                     setNumber: set.setNumber,

@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class CompletedSet {
+final class CompletedSet: Identifiable {
     var id: UUID
     var weight: Double
     var reps: Int

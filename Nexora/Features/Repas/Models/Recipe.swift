@@ -93,7 +93,7 @@ struct Recipe: Identifiable, Hashable {
 }
 
 @Model
-final class FavoriteRecipe {
+final class FavoriteRecipe: Identifiable {
     var id: UUID
     var recipeID: String
     var dateAdded: Date
