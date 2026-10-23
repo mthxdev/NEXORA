@@ -1,6 +1,5 @@
 // DebugLog.swift
 import Foundation
-import Darwin
 
 #if DIAGNOSTIC
 final class DebugLog {
@@ -68,17 +67,16 @@ final class DebugLog {
             }
             try FileManager.default.moveItem(at: tmp, to: url)
         } catch {
-            // Échec : entrée réessayée au prochain flush
         }
     }
     
     private func ts() -> String {
-        var info = mach_timebase_info_data_t()
-        mach_timebase_info(&info)
-        let ns = mach_absolute_time() * UInt64(info.numer) / UInt64(info.denom)
-        let ms = ns / 1_000_000
-        return String(format: "%02d:%02d:%02d.%03d",
-                      (ms/3_600_000)%24, (ms/60_000)%60, (ms/1_000)%60, ms%1000)
+        let d = Date()
+        let h = Calendar.current.component(.hour, from: d)
+        let m = Calendar.current.component(.minute, from: d)
+        let s = Calendar.current.component(.second, from: d)
+        let ms = Calendar.current.component(.nanosecond, from: d) / 1_000_000
+        return String(format: "%02d:%02d:%02d.%03d", h, m, s, ms)
     }
 }
 #else
