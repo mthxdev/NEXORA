@@ -15,8 +15,7 @@ final class DebugLog {
     private init() {
         let docs = FileManager.default.urls(for: .documentDirectory)[0]
         self.url = docs.appendingPathComponent("crash_debug.log")
-        // Simple file creation without any fancy options
-        let _ = try? Data().write(to: url, options: .atomic)
+        // Defer file creation to first write
         appendSync("—— Session \(ISO8601DateFormatter().string(from: Date())) ——")
     }
     
