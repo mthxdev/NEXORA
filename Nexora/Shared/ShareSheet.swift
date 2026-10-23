@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 #if DIAGNOSTIC
-struct ShareSheet: UIViewControllerRepresentable {
+struct DebugShareSheet: UIViewControllerRepresentable {
     let items: [Any]
     
     func makeUIViewController(context: Context) -> UIActivityViewController {
@@ -12,7 +12,7 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 #else
-struct ShareSheet: View {
+struct DebugShareSheet: View {
     var body: some View { EmptyView() }
 }
 #endif

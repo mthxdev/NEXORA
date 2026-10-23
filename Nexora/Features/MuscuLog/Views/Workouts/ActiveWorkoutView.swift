@@ -125,7 +125,7 @@ struct ActiveWorkoutView: View {
     private func exerciseSection(_ exercise: CompletedExercise) -> some View {
         let sets = exercise.sets.sorted { $0.setNumber < $1.setNumber }
         #if DIAGNOSTIC
-        DebugLog.shared.appendRender("RENDER ex=\(exercise.id.uuidString.prefix(8)) n=\(sets.count) ids=\(sets.map { $0.id.uuidString.prefix(4) }.joined(separator: ","))")
+        let _ = DebugLog.shared.appendRender("RENDER ex=\(exercise.id.uuidString.prefix(8)) n=\(sets.count) ids=\(sets.map { $0.id.uuidString.prefix(4) }.joined(separator: ","))")
         #endif
         
         Section {

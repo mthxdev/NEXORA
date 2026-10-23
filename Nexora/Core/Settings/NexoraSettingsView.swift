@@ -34,7 +34,7 @@ struct NexoraSettingsView: View {
             }
             #if DIAGNOSTIC
             .sheet(isPresented: $showingDebugExport) {
-                ShareSheet(items: [DebugLog.shared.prepareExport()])
+                DebugShareSheet(items: [DebugLog.shared.prepareExport()])
             }
             .alert("Aucun journal", isPresented: $debugExportAlert) {
                 Button("OK", role: .cancel) {}
