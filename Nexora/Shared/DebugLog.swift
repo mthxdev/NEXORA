@@ -12,7 +12,7 @@ final class DebugLog {
     private var renderCount = 0
     
     private init() {
-        let docs = FileManager.default.urls(for: .documentDirectory)[0]
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         self.url = docs.appendingPathComponent("crash_debug.log")
     }
     
