@@ -5,6 +5,10 @@ struct NexoraSettingsView: View {
     @AppStorage("appearance") private var appearance: AppAppearance = .system
     @AppStorage("appLogo") private var appLogo: AppLogo = .classic
     @State private var showingAbout = false
+    #if DIAGNOSTIC
+    @State private var showingDebugExport = false
+    @State private var debugExportAlert = false
+    #endif
     
     var body: some View {
         NavigationStack {
@@ -17,6 +21,10 @@ struct NexoraSettingsView: View {
                 
                 dataSection
                 
+                #if DIAGNOSTIC
+                diagnosticSection
+                #endif
+                
                 aboutSection
             }
             .navigationTitle("Réglages")
@@ -24,6 +32,16 @@ struct NexoraSettingsView: View {
             .sheet(isPresented: $showingAbout) {
                 AboutView(selectedLogo: appLogo)
             }
+            #if DIAGNOSTIC
+            .sheet(isPresented: $showingDebugExport) {
+                ShareSheet(items: [DebugLog.shared.prepareExport()])
+            }
+            .alert("Aucun journal", isPresented: $debugExportAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Le fichier de diagnostic est vide ou absent.")
+            }
+            #endif
         }
         .onChange(of: appLogo) { _, newLogo in
             applyAlternateIcon(newLogo)
@@ -114,7 +132,7 @@ struct NexoraSettingsView: View {
         }
     }
     
-    private var aboutSection: some View {
+private var aboutSection: some View {
         Section {
             Button {
                 showingAbout = true
@@ -129,12 +147,12 @@ struct NexoraSettingsView: View {
             }
             .foregroundStyle(NexoraColors.label)
             .accessibilityLabel("À propos de Nexora")
- 
+  
             Link(destination: URL(string: "https://github.com")!) {
                 Label("Code source", systemImage: "chevron.left.forwardslash.chevron.right")
             }
             .accessibilityLabel("Code source sur GitHub")
- 
+  
             Link(destination: URL(string: "https://github.com")!) {
                 Label("Signaler un problème", systemImage: "exclamationmark.bubble")
             }
@@ -145,6 +163,21 @@ struct NexoraSettingsView: View {
             Text(versionFooter)
         }
     }
+    
+    // DEBUG — Diagnostic section
+    #if DIAGNOSTIC
+    private var diagnosticSection: some View {
+        Section("Diagnostic") {
+            Button("Exporter journal de crash") {
+                if DebugLog.shared.hasContent {
+                    showingDebugExport = true
+                } else {
+                    debugExportAlert = true
+                }
+            }
+        }
+    }
+    #endif
     
     private var versionFooter: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
