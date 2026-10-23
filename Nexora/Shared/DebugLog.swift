@@ -72,11 +72,11 @@ final class DebugLog {
     
     private func ts() -> String {
         let d = Date()
-        let h = Calendar.current.component(.hour, from: d)
-        let m = Calendar.current.component(.minute, from: d)
-        let s = Calendar.current.component(.second, from: d)
-        let ms = Calendar.current.component(.nanosecond, from: d) / 1_000_000
-        return String(format: "%02d:%02d:%02d.%03d", h, m, s, ms)
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss.SSS"
+        f.timeZone = TimeZone.current
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f.string(from: d)
     }
 }
 #else
