@@ -1,4 +1,5 @@
 import SwiftUI
+import Darwin
 
 struct ActiveSetRowView: View {
     let setID: UUID
@@ -58,16 +59,36 @@ struct ActiveSetRowView: View {
                 .frame(width: 30, alignment: .leading)
         }
         .padding(.vertical, 2)
+        .onAppear {
+            #if DIAGNOSTIC
+            DebugLog.shared.append("LIFECYCLE APPEAR set=\(setID.uuidString.prefix(8))")
+            #endif
+        }
+        .onDisappear {
+            #if DIAGNOSTIC
+            DebugLog.shared.append("LIFECYCLE DISAPPEAR set=\(setID.uuidString.prefix(8))")
+            #endif
+        }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
+                #if DIAGNOSTIC
+                DebugLog.shared.append("SWIPE_DELETE set=\(setID.uuidString.prefix(8))")
+                #endif
                 showingDelete = true
             } label: {
                 Label("Supprimer", systemImage: "trash")
             }
         }
         .alert("Supprimer cette série ?", isPresented: $showingDelete) {
-            Button("Annuler", role: .cancel) { }
+            Button("Annuler", role: .cancel) {
+                #if DIAGNOSTIC
+                DebugLog.shared.append("ALERT_CANCEL set=\(setID.uuidString.prefix(8))")
+                #endif
+            }
             Button("Supprimer", role: .destructive) {
+                #if DIAGNOSTIC
+                DebugLog.shared.append("ALERT_CONFIRM set=\(setID.uuidString.prefix(8))")
+                #endif
                 onDelete(setID)
             }
         } message: {

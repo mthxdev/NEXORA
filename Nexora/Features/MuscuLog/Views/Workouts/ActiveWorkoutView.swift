@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import Darwin
 
 struct ActiveWorkoutView: View {
     @Environment(\.modelContext) private var modelContext
@@ -122,8 +123,13 @@ struct ActiveWorkoutView: View {
 
     @ViewBuilder
     private func exerciseSection(_ exercise: CompletedExercise) -> some View {
+        let sets = exercise.sets.sorted { $0.setNumber < $1.setNumber }
+        #if DIAGNOSTIC
+        DebugLog.shared.appendRender("RENDER ex=\(exercise.id.uuidString.prefix(8)) n=\(sets.count) ids=\(sets.map { $0.id.uuidString.prefix(4) }.joined(separator: ","))")
+        #endif
+        
         Section {
-            ForEach(exercise.sets.sorted(by: { $0.setNumber < $1.setNumber }), id: \.id) { set in
+            ForEach(sets, id: \.id) { set in
                 ActiveSetRowView(
                     setID: set.id,
                     setNumber: set.setNumber,
@@ -284,6 +290,9 @@ struct ActiveWorkoutView: View {
 
     private func saveContext() {
         MainActor.assumeIsolated {
+            #if DIAGNOSTIC
+            DebugLog.shared.append("MUTATE saveContext")
+            #endif
             do {
                 try modelContext.save()
             } catch {
@@ -294,6 +303,9 @@ struct ActiveWorkoutView: View {
 
     private func deleteSet(_ setID: UUID, exerciseID: UUID) {
         MainActor.assumeIsolated {
+            #if DIAGNOSTIC
+            DebugLog.shared.append("MUTATE deleteSet set=\(setID.uuidString.prefix(8)) ex=\(exerciseID.uuidString.prefix(8))")
+            #endif
             guard let workout = completedWorkout else { return }
             if let exercise = workout.exercises.first(where: { $0.id == exerciseID }),
                let set = exercise.sets.first(where: { $0.id == setID }) {
