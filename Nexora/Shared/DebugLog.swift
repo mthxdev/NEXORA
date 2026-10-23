@@ -15,8 +15,6 @@ final class DebugLog {
     private init() {
         let docs = FileManager.default.urls(for: .documentDirectory)[0]
         self.url = docs.appendingPathComponent("crash_debug.log")
-        // Defer file creation to first write
-        appendSync("—— Session \(ISO8601DateFormatter().string(from: Date())) ——")
     }
     
     func append(_ line: String) {
@@ -71,7 +69,6 @@ final class DebugLog {
             try FileManager.default.moveItem(at: tmp, to: url)
         } catch {
             // Échec : entrée réessayée au prochain flush
-            // Pas de réessai auto, pas de boucle, erreur visible en debug
         }
     }
     
