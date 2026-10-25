@@ -27,7 +27,7 @@ targets:
         MARKETING_VERSION: "2.0"
         # Incrémenté à chaque livraison : SpringBoard ne régénère pas le cache
         # d'icônes si CFBundleVersion ne change pas.
-        CURRENT_PROJECT_VERSION: 3
+        CURRENT_PROJECT_VERSION: 4
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Nexora
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
