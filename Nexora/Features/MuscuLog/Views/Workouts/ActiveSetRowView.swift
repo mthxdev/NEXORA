@@ -70,14 +70,16 @@ struct ActiveSetRowView: View {
             #endif
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
+            Button {
                 #if DIAGNOSTIC
                 DebugLog.shared.append("SWIPE_DELETE set=\(setID.uuidString.prefix(8))")
                 #endif
                 showingDelete = true
             } label: {
                 Label("Supprimer", systemImage: "trash")
+                    .foregroundStyle(.red)
             }
+            .tint(.red)
         }
         .alert("Supprimer cette série ?", isPresented: $showingDelete) {
             Button("Annuler", role: .cancel) {
