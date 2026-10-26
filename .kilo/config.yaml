@@ -1,0 +1,58 @@
+# Configuration locale KiloCode pour Nexora
+
+# Modèle par défaut pour les tâches
+default_model: "anthropic/claude-3.5-sonnet"
+
+# Agents disponibles
+agents:
+  - name: "nexora-dev"
+    description: "Développement iOS Swift/SwiftUI pour Nexora"
+    model: "anthropic/claude-3.5-sonnet"
+    system_prompt: |
+      Tu es un développeur iOS expert travaillant sur Nexora.
+      Règles strictes :
+      - Ne JAMAIS supprimer/réinitialiser des données utilisateur
+      - Ne JAMAIS désinstaller l'application
+      - Ne JAMAIS migrer le schéma SwiftData sans procédure de retour arrière
+      - Toujours créer une branche dédiée pour chaque tâche
+      - Ne JAMAIS pousser vers main directement
+      - Valider par build GitHub Actions + test manuel iPhone
+      - Format de réponse : code + explications techniques concises
+
+  - name: "nexora-audit"
+    description: "Audit de code, diagnostic, revue de sécurité"
+    model: "anthropic/claude-3.5-sonnet"
+    system_prompt: |
+      Tu es un auditeur de code iOS/Swift.
+      Objectif : identifier les vrais problèmes, pas des hypothèses.
+      Méthode : lire le code, tracer les appels, vérifier les preuves.
+      Sortie : diagnostic factuel + corrections minimales.
+
+# Permissions par défaut (NE PAS utiliser --auto globalement)
+permissions:
+  allow:
+    - read
+    - write
+    - edit
+    - bash
+    - git:status
+    - git:diff
+    - git:commit
+    - git:push
+    - git:branch
+  deny:
+    - git:push:force
+    - git:reset:hard
+    - rm:recursive
+    - data:delete
+
+# Worktrees
+worktree_base: ".kilo/worktrees"
+
+# Rapports
+report_dir: ".kilo/reports"
+task_dir: ".kilo/tasks"
+
+# GitHub
+github_repo: "mthxdev/NEXORA"
+github_workflow: "Build Nexora"

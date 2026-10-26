@@ -1,0 +1,39 @@
+{
+  "id": "task-2026-10-26-001",
+  "title": "Fix backup external iCloud trigger for LogBook modifications",
+  "prompt": "Audit BackupManager.swift: backupAfterImportantOperation n'est appelé qu'à la fin d'une séance MuscuLog (ActiveWorkoutView.finishWorkout). Il faut l'appeler après chaque modification LogBook (création/modification SeriesEntry, MovieEntry, AnimeEntry, GameEntry, ProjectEntry, LearningEntry) et après insert dans AddEntryView.save(). Vérifier aussi la persistance du security-scoped bookmark (startAccessingSecurityScopedResource doit être appelé à chaque écriture externe).\n\nFichiers à modifier :\n1. Nexora/Core/Data/BackupManager.swift — s'assurer que writeExternalBackup démarre bien le security scope à chaque appel\n2. Nexora/Features/LogBook/Views/AddEntryView.save() — ajouter BackupManager.shared.backupAfterImportantOperation(context: modelContext) après modelContext.insert()\n3. Nexora/Features/LogBook/Views/*DetailView.save() — idem pour les modifications existantes\n\nContraintes : ne pas supprimer de données, ne pas migrer le schéma, ne pas désinstaller l'app.",
+  "scope": {
+    "files": [
+      "Nexora/Core/Data/BackupManager.swift",
+      "Nexora/Features/LogBook/Views/AddEntryView.swift",
+      "Nexora/Features/LogBook/Views/SeriesDetailView.swift",
+      "Nexora/Features/LogBook/Views/MovieDetailView.swift",
+      "Nexora/Features/LogBook/Views/AnimeDetailView.swift",
+      "Nexora/Features/LogBook/Views/GameDetailView.swift",
+      "Nexora/Features/LogBook/Views/ProjectDetailView.swift",
+      "Nexora/Features/LogBook/Views/LearningDetailView.swift"
+    ],
+    "branch": "fix/backup-external-trigger-logbook"
+  },
+  "constraints": {
+    "no_data_destruction": true,
+    "no_uninstall": true,
+    "no_schema_migration": true,
+    "max_duration_minutes": 30
+  },
+  "validation": {
+    "build_required": true,
+    "tests": ["BackupManagerTests"],
+    "manual_verification": [
+      "Ouvrir l'app sur iPhone",
+      "Créer une nouvelle série dans LogBook",
+      "Vérifier dans Fichiers > iCloud Drive > dossier choisi : présence de Nexora_Sauvegarde_*.json",
+      "Modifier une série existante → vérifier nouvelle sauvegarde externe"
+    ]
+  },
+  "metadata": {
+    "created_by": "chatgpt",
+    "priority": "high",
+    "tags": ["backup", "icloud", "logbook", "security-scoped-bookmark"]
+  }
+}
