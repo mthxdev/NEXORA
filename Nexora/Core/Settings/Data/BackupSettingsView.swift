@@ -13,6 +13,93 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
+/// Contrôleur pour choisir un dossier via le sélecteur de fichiers iOS.
+struct FolderPicker: UIViewControllerRepresentable {
+    let onPick: (URL) -> Void
+    let onCancel: () -> Void
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+        picker.allowsMultipleSelection = false
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPick: onPick, onCancel: onCancel)
+    }
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPick: (URL) -> Void
+        let onCancel: () -> Void
+
+        init(onPick: @escaping (URL) -> Void, onCancel: @escaping () -> Void) {
+            self.onPick = onPick
+            self.onCancel = onCancel
+        }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else { return }
+            onPick(url)
+        }
+
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            onCancel()
+        }
+    }
+}
+
+/// Feuille de partage système, pour exporter le fichier de sauvegarde.
+struct BackupShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+/// Feuille pour sélectionner un dossier de sauvegarde.
+struct FolderPickerSheet: UIViewControllerRepresentable {
+    let onPick: (URL) -> Void
+    let onCancel: () -> Void
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+        picker.allowsMultipleSelection = false
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPick: onPick, onCancel: onCancel)
+    }
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPick: (URL) -> Void
+        let onCancel: () -> Void
+
+        init(onPick: @escaping (URL) -> Void, onCancel: @escaping () -> Void) {
+            self.onPick = onPick
+            self.onCancel = onCancel
+        }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else { return }
+            onPick(url)
+        }
+
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            onCancel()
+        }
+    }
+}
+
 struct BackupSettingsView: View {
     @Environment(\.modelContext) private var modelContext
 
@@ -20,6 +107,7 @@ struct BackupSettingsView: View {
     @State private var showingDeleteConfirm = false
     @State private var showingShareSheet = false
     @State private var exportURL: URL?
+    @State private var showingFolderPicker = false
 
     @State private var alertTitle = ""
     @State private var alertMessage = ""
@@ -28,22 +116,51 @@ struct BackupSettingsView: View {
     @State private var pendingBackup: NexoraBackup?
     @State private var showingRestoreConfirm = false
 
-    private var lastBackupText: String {
+    @State private var showingFolderPickerSheet = false
+
+    private var lastAutoBackupText: String {
         guard let date = BackupManager.shared.lastAutoBackupDate else {
             return "Aucune sauvegarde automatique enregistrée pour l'instant."
         }
-        return "Dernière sauvegarde : \(date.formatted(date: .abbreviated, time: .shortened))"
+        return "Dernière auto-sauvegarde : \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    private var lastExternalBackupText: String {
+        guard let date = BackupManager.shared.lastExternalBackupDate else {
+            return "Aucune sauvegarde externe configurée."
+        }
+        return "Dernière sauvegarde externe : \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+
+    private var hasExternalBackupFolder: Bool {
+        BackupManager.shared.hasExternalBackupFolder
     }
 
     var body: some View {
         List {
+            externalBackupSection
             backupSection
             dangerSection
         }
         .sheet(isPresented: $showingShareSheet) {
             if let exportURL {
-                ShareSheet(items: [exportURL])
+                BackupShareSheet(items: [exportURL])
             }
+        }
+        .sheet(isPresented: $showingFolderPickerSheet) {
+            FolderPickerSheet(
+                onPick: { url in
+                    BackupManager.shared.setExternalBackupFolder(url)
+                },
+                onCancel: { }
+            )
+        }
+        .fileImporter(
+            isPresented: $showingFileImporter,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImportSelection(result)
         }
         .alert("Supprimer toutes les données ?", isPresented: $showingDeleteConfirm) {
             Button("Annuler", role: .cancel) { }
@@ -77,22 +194,81 @@ struct BackupSettingsView: View {
 
     // MARK: - Sections
 
+    private var externalBackupSection: some View {
+        Section {
+            if hasExternalBackupFolder {
+                Label("Dossier configuré : iCloud Drive / Fichiers", systemImage: "folder.badge.checkmark")
+                    .foregroundStyle(.green)
+                Label(lastExternalBackupText, systemImage: "icloud.and.arrow.up")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button(role: .destructive) {
+                    BackupManager.shared.clearExternalBackupFolder()
+                } label: {
+                    Label("Supprimer le dossier de sauvegarde", systemImage: "folder.badge.minus")
+                }
+
+                Button {
+                    // Créer une sauvegarde externe maintenant
+                    Task {
+                        do {
+                            try await BackupManager.shared.writeExternalBackupAsync(context: modelContext)
+                            await MainActor.run {
+                                present(title: "Sauvegarde externe créée", message: "La sauvegarde a été écrite dans le dossier configuré.")
+                            }
+                        } catch {
+                            await MainActor.run {
+                                present(title: "Échec de la sauvegarde", message: error.localizedDescription)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Sauvegarder maintenant", systemImage: "icloud.and.arrow.up")
+                }
+            } else {
+                Text("""
+                    Aucune sauvegarde externe configurée. Les sauvegardes automatiques sont stockées \
+                    dans le sandbox de l'application et seront perdues en cas de désinstallation.
+
+                    Choisissez un dossier dans iCloud Drive (via l'app Fichiers) pour y enregistrer \
+                    automatiquement vos sauvegardes après chaque séance importante.
+                    """)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    showingFolderPickerSheet = true
+                } label: {
+                    Label("Choisir un dossier (iCloud Drive)", systemImage: "folder.badge.plus")
+                }
+                .accessibilityHint("Sélectionnez un dossier dans iCloud Drive pour y stocker les sauvegardes externes")
+            }
+        } header: {
+            Text("Sauvegarde externe (iCloud Drive)")
+        } footer: {
+            Text("""
+                Le dossier doit se trouver dans iCloud Drive (via l'app Fichiers) pour être synchronisé. \
+                Après la première sélection, les sauvegardes seront automatiques après chaque séance importante.
+                """)
+        }
+    }
 
     private var backupSection: some View {
         Section {
             Text("""
-            Une sauvegarde complète est écrite dans le dossier Documents de \
-            l'application à chaque lancement et à la fin d'une séance. Elle couvre \
-            MuscuLog, LogBook, les favoris de Repas et vos réglages.
+                Une sauvegarde complète est écrite dans le dossier Documents de \
+                l'application à chaque lancement et à la fin d'une séance. Elle couvre \
+                MuscuLog, LogBook, les favoris de Repas et vos réglages.
 
-            Cette copie automatique est visible dans l'application Fichiers : \
-            Parcourir → Emplacements → Nexora. Elle ne survit pas à une \
-            désinstallation de l'application.
-            """)
-            .font(.caption)
-            .foregroundStyle(.secondary)
+                Cette copie automatique est visible dans l'application Fichiers : \
+                Parcourir → Emplacements → Nexora. Elle ne survit pas à une \
+                désinstallation de l'application.
+                """)
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-            Label(lastBackupText, systemImage: "clock.arrow.circlepath")
+            Label(lastAutoBackupText, systemImage: "clock.arrow.circlepath")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -109,14 +285,14 @@ struct BackupSettingsView: View {
                 Label("Importer et restaurer", systemImage: "arrow.down.doc")
             }
         } header: {
-            Text("Sauvegarde")
+            Text("Sauvegarde locale (sandbox)")
         } footer: {
             Text("""
-            Pour un changement d'iPhone : utilisez « Exporter une copie », \
-            choisissez « Enregistrer dans Fichiers » puis « iCloud Drive ». \
-            Sur le nouvel iPhone, ouvrez Nexora → Réglages → Sauvegarde → \
-            « Importer et restaurer ».
-            """)
+                Pour un changement d'iPhone : utilisez « Exporter une copie », \
+                choisissez « Enregistrer dans Fichiers » puis « iCloud Drive ». \
+                Sur le nouvel iPhone, ouvrez Nexora → Réglages → Sauvegarde → \
+                « Importer et restaurer ».
+                """)
         }
     }
 
@@ -245,4 +421,3 @@ struct SettingsView: View {
         inMemory: true
     )
 }
-

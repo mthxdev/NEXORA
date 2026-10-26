@@ -18,6 +18,8 @@ enum BackupError: LocalizedError {
     case unsupportedVersion(Int)
     case emptyBackup
     case saveFailed(String)
+    case noBackupFolderSelected
+    case securityScopeFailed
 
     var errorDescription: String? {
         switch self {
@@ -31,6 +33,10 @@ enum BackupError: LocalizedError {
             return "La sauvegarde ne contient aucune donnée à restaurer."
         case .saveFailed(let detail):
             return "Les données n'ont pas pu être enregistrées : \(detail)"
+        case .noBackupFolderSelected:
+            return "Aucun dossier de sauvegarde externe n'a été choisi. Allez dans Réglages > Sauvegarde pour en choisir un."
+        case .securityScopeFailed:
+            return "Impossible d'accéder au dossier de sauvegarde. Veuillez le sélectionner à nouveau dans les réglages."
         }
     }
 }
@@ -45,6 +51,9 @@ final class BackupManager {
     /// Survit à un crash de l'application pendant la restauration.
     static let restoreFallbackFileName = ".Nexora_Restore_Fallback.json"
 
+    /// Clé UserDefaults pour stocker le bookmark du dossier de sauvegarde externe.
+    private static let backupFolderBookmarkKey = "externalBackupFolderBookmark"
+
     private static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -56,6 +65,60 @@ final class BackupManager {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
+    }
+
+    // MARK: - External Backup Folder Management
+
+    /// URL du dossier de sauvegarde externe choisi par l'utilisateur (si configuré).
+    @MainActor
+    var externalBackupFolderURL: URL? {
+        get {
+            guard let bookmarkData = UserDefaults.standard.data(forKey: Self.backupFolderBookmarkKey) else {
+                return nil
+            }
+            var isStale = false
+            do {
+                let url = try URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale)
+                if isStale {
+                    // Bookmark is stale, try to refresh it
+                    let newBookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                    UserDefaults.standard.set(newBookmark, forKey: Self.backupFolderBookmarkKey)
+                }
+                return url
+            } catch {
+                return nil
+            }
+        }
+        set {
+            if let url = newValue {
+                do {
+                    let bookmarkData = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                    UserDefaults.standard.set(bookmarkData, forKey: Self.backupFolderBookmarkKey)
+                } catch {
+                    print("BackupManager: failed to save folder bookmark — \(error)")
+                }
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.backupFolderBookmarkKey)
+            }
+        }
+    }
+
+    /// Vérifie si un dossier de sauvegarde externe est configuré et accessible.
+    @MainActor
+    var hasExternalBackupFolder: Bool {
+        externalBackupFolderURL != nil
+    }
+
+    /// Configure le dossier de sauvegarde externe à partir d'une URL choisie par l'utilisateur.
+    @MainActor
+    func setExternalBackupFolder(_ url: URL) {
+        externalBackupFolderURL = url
+    }
+
+    /// Supprime la référence au dossier de sauvegarde externe.
+    @MainActor
+    func clearExternalBackupFolder() {
+        externalBackupFolderURL = nil
     }
 
     // MARK: - Export
@@ -113,6 +176,35 @@ final class BackupManager {
         return url
     }
 
+    /// Écrit une sauvegarde dans un dossier externe choisi par l'utilisateur.
+    /// Retourne l'URL du fichier créé.
+    @MainActor
+    @discardableResult
+    func writeExternalBackup(context: ModelContext) throws -> URL {
+        guard let folderURL = externalBackupFolderURL else {
+            throw BackupError.noBackupFolderSelected
+        }
+
+        // Accéder au scope de sécurité
+        let needsScope = folderURL.startAccessingSecurityScopedResource()
+        guard needsScope else {
+            throw BackupError.securityScopeFailed
+        }
+        defer { folderURL.stopAccessingSecurityScopedResource() }
+
+        let backup = try makeBackup(context: context)
+        let data = try Self.encoder.encode(backup)
+        let fileName = "Nexora_Sauvegarde_\(ISO8601DateFormatter().string(from: Date())).json"
+        let url = folderURL.appendingPathComponent(fileName)
+        
+        try data.write(to: url, options: .atomic)
+        
+        // Mettre à jour la date de dernière sauvegarde externe
+        UserDefaults.standard.set(Date(), forKey: "lastExternalBackupDate")
+        
+        return url
+    }
+
     /// Sauvegarde automatique, appelée au lancement et après une séance.
     ///
     /// Écrit dans le dossier Documents de l'application, exposé dans Fichiers
@@ -124,6 +216,68 @@ final class BackupManager {
         do {
             let url = try writeBackup(context: context)
             UserDefaults.standard.set(Date(), forKey: "lastAutoBackupDate")
+            
+            // Si un dossier externe est configuré, faire aussi une sauvegarde externe
+            if hasExternalBackupFolder {
+                do {
+                    try writeExternalBackup(context: context)
+                } catch {
+                    print("BackupManager: sauvegarde externe automatique impossible — \(error)")
+                }
+            }
+            
+            return url
+        } catch {
+            print("BackupManager: sauvegarde automatique impossible — \(error)")
+            return nil
+        }
+    }
+
+    /// Sauvegarde externe déclenchée après une opération importante.
+    @MainActor
+    func backupAfterImportantOperation(context: ModelContext) {
+        guard hasExternalBackupFolder else { return }
+        
+        // Éviter les sauvegardes trop fréquentes (minimum 5 minutes)
+        let lastDate = UserDefaults.standard.object(forKey: "lastExternalBackupDate") as? Date ?? .distantPast
+        guard Date().timeIntervalSince(lastDate) > 300 else { return }
+        
+        Task.detached {
+            do {
+                try await self.writeExternalBackupAsync(context: context)
+            } catch {
+                print("BackupManager: sauvegarde externe asynchrone impossible — \(error)")
+            }
+        }
+    }
+
+    private func writeExternalBackupAsync(context: ModelContext) async throws {
+        try await MainActor.run {
+            try self.writeExternalBackup(context: context)
+        }
+    }
+
+    /// Sauvegarde automatique, appelée au lancement et après une séance.
+    ///
+    /// Écrit dans le dossier Documents de l'application, exposé dans Fichiers
+    /// grâce à `UIFileSharingEnabled`. Ce fichier **ne survit pas** à une
+    /// désinstallation : ce n'est pas une sauvegarde externe.
+    @MainActor
+    @discardableResult
+    func autoBackup(context: ModelContext) -> URL? {
+        do {
+            let url = try writeBackup(context: context)
+            UserDefaults.standard.set(Date(), forKey: "lastAutoBackupDate")
+            
+            // Si un dossier externe est configuré, faire aussi une sauvegarde externe
+            if hasExternalBackupFolder {
+                do {
+                    try writeExternalBackup(context: context)
+                } catch {
+                    print("BackupManager: sauvegarde externe automatique impossible — \(error)")
+                }
+            }
+            
             return url
         } catch {
             print("BackupManager: sauvegarde automatique impossible — \(error)")
@@ -134,6 +288,11 @@ final class BackupManager {
     /// Date de la dernière sauvegarde automatique réussie.
     nonisolated var lastAutoBackupDate: Date? {
         UserDefaults.standard.object(forKey: "lastAutoBackupDate") as? Date
+    }
+
+    /// Date de la dernière sauvegarde externe réussie.
+    nonisolated var lastExternalBackupDate: Date? {
+        UserDefaults.standard.object(forKey: "lastExternalBackupDate") as? Date
     }
 
     // MARK: - Import
