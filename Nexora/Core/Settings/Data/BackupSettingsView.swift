@@ -133,7 +133,7 @@ struct BackupSettingsView: View {
     }
 
     private var hasExternalBackupFolder: Bool {
-        BackupManager.shared.hasExternalBackupFolder
+        MainActor.assumeIsolated { BackupManager.shared.hasExternalBackupFolder }
     }
 
     var body: some View {
@@ -213,7 +213,7 @@ struct BackupSettingsView: View {
                     // Créer une sauvegarde externe maintenant
                     Task {
                         do {
-                            try await BackupManager.shared.writeExternalBackupAsync(context: modelContext)
+                            try await BackupManager.shared.performExternalBackup(context: modelContext)
                             await MainActor.run {
                                 present(title: "Sauvegarde externe créée", message: "La sauvegarde a été écrite dans le dossier configuré.")
                             }
