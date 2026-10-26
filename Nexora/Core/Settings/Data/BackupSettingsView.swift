@@ -204,7 +204,9 @@ struct BackupSettingsView: View {
                     .foregroundStyle(.secondary)
 
                 Button(role: .destructive) {
-                    BackupManager.shared.clearExternalBackupFolder()
+                    Task { @MainActor in
+                        BackupManager.shared.clearExternalBackupFolder()
+                    }
                 } label: {
                     Label("Supprimer le dossier de sauvegarde", systemImage: "folder.badge.minus")
                 }

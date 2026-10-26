@@ -281,6 +281,12 @@ final class BackupManager {
         }
     }
 
+    /// Vérifie si un dossier de sauvegarde externe est configuré et accessible.
+    @MainActor
+    var hasExternalBackupFolder: Bool {
+        externalBackupFolderURL != nil
+    }
+
     /// Date de la dernière sauvegarde automatique réussie.
     nonisolated var lastAutoBackupDate: Date? {
         UserDefaults.standard.object(forKey: "lastAutoBackupDate") as? Date
