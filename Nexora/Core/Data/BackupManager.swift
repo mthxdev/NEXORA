@@ -172,8 +172,8 @@ final class BackupManager {
             series: series.map(Self.backupSerie(from:)),
             animes: animes.map(Self.backupAnime(from:)),
             games: games.map(Self.backupGame(from:)),
-            projects: projects.map(Self.backupProject(from:)),
-            learnings: learnings.map(Self.backupLearning(from:)),
+            projects: projects.map(Self.backupProjectEntry(from:)),
+            learnings: learnings.map(Self.backupLearningEntry(from:)),
             favorites: favorites.map {
                 BackupFavorite(id: $0.id, recipeID: $0.recipeID, dateAdded: $0.dateAdded)
             },
@@ -594,7 +594,7 @@ final class BackupManager {
         )
     }
 
-    private static func backupProject(from project: ProjectEntry) -> BackupProject {
+    private static func backupProjectEntry(from project: ProjectEntry) -> BackupProject {
         BackupProject(
             id: project.id,
             name: project.name,
@@ -611,7 +611,7 @@ final class BackupManager {
         )
     }
 
-    private static func backupLearning(from learning: LearningEntry) -> BackupLearning {
+    private static func backupLearningEntry(from learning: LearningEntry) -> BackupLearning {
         BackupLearning(
             id: learning.id,
             name: learning.name,
@@ -627,7 +627,7 @@ final class BackupManager {
         )
     }
 
-    private static func backupWorkout(from template: WorkoutTemplate) -> BackupWorkoutTemplate {
+    private static func backupWorkoutTemplate(from template: WorkoutTemplate) -> BackupWorkoutTemplate {
         BackupWorkoutTemplate(
             id: template.id,
             name: template.name,
@@ -649,39 +649,6 @@ final class BackupManager {
             targetSets: template.targetSets,
             targetReps: template.targetReps,
             displayOrder: template.displayOrder
-        )
-    }
-
-    private static func backupProject(from template: ProjectEntry) -> BackupProject {
-        BackupProject(
-            id: template.id,
-            name: template.name,
-            description: template.projectDescription,
-            status: template.status.rawValue,
-            priority: template.priority.rawValue,
-            dateCreated: template.dateCreated,
-            dateModified: template.dateModified,
-            dateCompleted: template.dateCompleted,
-            goal: template.goal,
-            nextStep: template.nextStep,
-            notes: template.notes,
-            isFavorite: template.isFavorite
-        )
-    }
-
-    private static func backupLearning(from learning: LearningEntry) -> BackupLearning {
-        BackupLearning(
-            id: learning.id,
-            name: learning.name,
-            description: learning.learningDescription,
-            status: learning.status.rawValue,
-            dateStarted: learning.dateStarted,
-            dateCompleted: learning.dateCompleted,
-            dateLastUpdated: learning.dateLastUpdated,
-            goal: learning.goal,
-            notes: learning.notes,
-            resources: learning.resources,
-            isFavorite: learning.isFavorite
         )
     }
 }
