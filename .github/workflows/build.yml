@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          clean: true
 
       - name: Select Xcode
         run: |
@@ -28,6 +30,9 @@ jobs:
           # Force the project objectVersion back to 56 (Xcode 15 compatible)
           # to bypass the format 77 error without triggering Xcode 16's actool bug.
           sed -i '' -E 's/objectVersion = [0-9]+;/objectVersion = 56;/g' Nexora.xcodeproj/project.pbxproj
+
+      - name: Clean build directory
+        run: rm -rf build
 
       - name: Build app
         id: build
