@@ -54,26 +54,6 @@ struct NexoraBackup: Codable {
         favorites: [BackupFavorite] = [],
         settings: BackupSettings? = nil
     ) {
-        // Create a temporary instance to compute checksum
-        let tempBackup = NexoraBackup(
-            version: version,
-            exportDate: exportDate,
-            appVersion: appVersion,
-            appBuild: appBuild,
-            programs: programs,
-            workouts: workouts,
-            movies: movies,
-            series: series,
-            animes: animes,
-            games: games,
-            projects: projects,
-            learnings: learnings,
-            favorites: favorites,
-            settings: settings,
-            checksum: nil
-        )
-        let computedChecksum = Self.computeChecksum(for: tempBackup)
-        
         self.version = version
         self.exportDate = exportDate
         self.appVersion = appVersion
@@ -88,7 +68,22 @@ struct NexoraBackup: Codable {
         self.learnings = learnings
         self.favorites = favorites
         self.settings = settings
-        self.checksum = computedChecksum
+        self.checksum = Self.computeChecksum(
+            version: version,
+            exportDate: exportDate,
+            appVersion: appVersion,
+            appBuild: appBuild,
+            programs: programs,
+            workouts: workouts,
+            movies: movies,
+            series: series,
+            animes: animes,
+            games: games,
+            projects: projects,
+            learnings: learnings,
+            favorites: favorites,
+            settings: settings
+        )
     }
 
     init(from decoder: Decoder) throws {
@@ -111,29 +106,39 @@ struct NexoraBackup: Codable {
     }
 
     /// Calcule le SHA256 de la sauvegarde (sans le champ checksum).
-    private static func computeChecksum(for backup: NexoraBackup) -> String {
-        // Create a copy without checksum by re-encoding all fields except checksum
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.sortedKeys]
-        
+    private static func computeChecksum(
+        version: Int,
+        exportDate: Date,
+        appVersion: String,
+        appBuild: String,
+        programs: [BackupProgram],
+        workouts: [BackupWorkout],
+        movies: [BackupMovie],
+        series: [BackupSerie],
+        animes: [BackupAnime],
+        games: [BackupGame],
+        projects: [BackupProject],
+        learnings: [BackupLearning],
+        favorites: [BackupFavorite],
+        settings: BackupSettings?
+    ) -> String {
         // Encode manually without checksum field
         var dict: [String: Any] = [:]
-        dict["version"] = backup.version
-        dict["exportDate"] = ISO8601DateFormatter().string(from: backup.exportDate)
-        dict["appVersion"] = backup.appVersion
-        dict["appBuild"] = backup.appBuild
-        dict["programs"] = backup.programs
-        dict["workouts"] = backup.workouts
-        dict["movies"] = backup.movies
-        dict["series"] = backup.series
-        dict["animes"] = backup.animes
-        dict["games"] = backup.games
-        dict["projects"] = backup.projects
-        dict["learnings"] = backup.learnings
-        dict["favorites"] = backup.favorites
-        dict["settings"] = backup.settings
-        
+        dict["version"] = version
+        dict["exportDate"] = ISO8601DateFormatter().string(from: exportDate)
+        dict["appVersion"] = appVersion
+        dict["appBuild"] = appBuild
+        dict["programs"] = programs
+        dict["workouts"] = workouts
+        dict["movies"] = movies
+        dict["series"] = series
+        dict["animes"] = animes
+        dict["games"] = games
+        dict["projects"] = projects
+        dict["learnings"] = learnings
+        dict["favorites"] = favorites
+        dict["settings"] = settings
+
         let data = try! JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys])
         let hash = SHA256.hash(data: data)
         return hash.compactMap { String(format: "%02x", $0) }.joined()
@@ -142,7 +147,22 @@ struct NexoraBackup: Codable {
     /// Vérifie l'intégrité de la sauvegarde.
     func verifyChecksum() -> Bool {
         guard let expectedChecksum = checksum else { return true }
-        let computed = Self.computeChecksum(for: self)
+        let computed = Self.computeChecksum(
+            version: version,
+            exportDate: exportDate,
+            appVersion: appVersion,
+            appBuild: appBuild,
+            programs: programs,
+            workouts: workouts,
+            movies: movies,
+            series: series,
+            animes: animes,
+            games: games,
+            projects: projects,
+            learnings: learnings,
+            favorites: favorites,
+            settings: settings
+        )
         return computed == expectedChecksum
     }
 
