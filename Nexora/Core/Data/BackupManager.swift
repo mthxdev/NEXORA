@@ -124,19 +124,11 @@ final class BackupManager {
     @MainActor
     func setExternalBackupFolder(_ url: URL) {
         do {
-            #if os(iOS)
             let bookmark = try url.bookmarkData(
-                options: .withSecurityScope,
+                options: [],
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
             )
-            #else
-            let bookmark = try url.bookmarkData(
-                options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            )
-            #endif
             backupFolderBookmarkData = bookmark
         } catch {
             print("BackupManager: failed to save folder bookmark — \(error)")
