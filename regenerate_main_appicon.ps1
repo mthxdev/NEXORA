@@ -1,5 +1,37 @@
 Add-Type -AssemblyName System.Drawing
 
+function Get-ContentBounds {
+    param([System.Drawing.Bitmap]$bitmap)
+    
+    $width = $bitmap.Width
+    $height = $bitmap.Height
+    $left = $width
+    $top = $height
+    $right = 0
+    $bottom = 0
+    $foundPixel = $false
+    
+    for ($y = 0; $y -lt $height; $y++) {
+        for ($x = 0; $x -lt $width; $x++) {
+            $pixel = $bitmap.GetPixel($x, $y)
+            # Check if pixel is not fully transparent (alpha > 0)
+            if ($pixel.A -gt 0) {
+                $foundPixel = $true
+                if ($x -lt $left) { $left = $x }
+                if ($x -gt $right) { $right = $x }
+                if ($y -lt $top) { $top = $y }
+                if ($y -gt $bottom) { $bottom = $y }
+            }
+        }
+    }
+    
+    if (-not $foundPixel) {
+        return @{ Left = 0; Top = 0; Width = $width; Height = $height }
+    }
+    
+    return @{ Left = $left; Top = $top; Width = $right - $left + 1; Height = $bottom - $top + 1 }
+}
+
 $sourceFile = "C:\Dev\_Mathieu\02_Projets\Perso\Nexora\Nexora\Resources\Assets.xcassets\NexoraLogo.imageset\NexoraLogo@3x.png"
 $targetDir = "C:\Dev\_Mathieu\02_Projets\Perso\Nexora\Nexora\Resources\Assets.xcassets\AppIcon.appiconset"
 
@@ -9,6 +41,19 @@ if (-not (Test-Path $sourceFile)) {
 }
 
 $sourceImg = [System.Drawing.Image]::FromFile($sourceFile)
+
+# Crop to content bounds (remove transparent padding)
+$bounds = Get-ContentBounds -bitmap $sourceImg
+Write-Host "Source: Content bounds = $($bounds.Width)x$($bounds.Height) at ($($bounds.Left), $($bounds.Top))"
+
+$croppedSource = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+$cropGraphics = [System.Drawing.Graphics]::FromImage($croppedSource)
+$cropGraphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+$cropGraphics.DrawImage($sourceImg, 
+    [System.Drawing.Rectangle]::FromLTRB(0, 0, $bounds.Width, $bounds.Height),
+    [System.Drawing.Rectangle]::FromLTRB($bounds.Left, $bounds.Top, $bounds.Left + $bounds.Width, $bounds.Top + $bounds.Height),
+    [System.Drawing.GraphicsUnit]::Pixel)
+$cropGraphics.Dispose()
 
 $iconSizes = @(
     @{ Size = 20;  Scale = 1; Idiom = "ipad";   FilenameSuffix = "20~ipad" },
@@ -42,7 +87,16 @@ foreach ($iconSize in $iconSizes) {
     # Fill with white background first (opaque)
     $graphics.Clear([System.Drawing.Color]::White)
     
-    $graphics.DrawImage($sourceImg, 0, 0, $pixelSize, $pixelSize)
+    # Draw cropped source image centered
+    $srcWidth = $croppedSource.Width
+    $srcHeight = $croppedSource.Height
+    $scale = [Math]::Min($pixelSize / $srcWidth, $pixelSize / $srcHeight)
+    $drawWidth = [int]($srcWidth * $scale)
+    $drawHeight = [int]($srcHeight * $scale)
+    $x = [int](($pixelSize - $drawWidth) / 2)
+    $y = [int](($pixelSize - $drawHeight) / 2)
+    
+    $graphics.DrawImage($croppedSource, $x, $y, $drawWidth, $drawHeight)
     $graphics.Dispose()
 
     $filename = "AppIcon-$($iconSize.FilenameSuffix).png"
@@ -52,4 +106,5 @@ foreach ($iconSize in $iconSizes) {
 }
 
 $sourceImg.Dispose()
-Write-Host "Done generating main AppIcon (OPAQUE)!"
+$croppedSource.Dispose()
+Write-Host "Done generating main AppIcon (OPAQUE, cropped to content)!"

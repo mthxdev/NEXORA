@@ -68,22 +68,7 @@ struct NexoraBackup: Codable {
         self.learnings = learnings
         self.favorites = favorites
         self.settings = settings
-        self.checksum = Self.computeChecksum(
-            version: version,
-            exportDate: exportDate,
-            appVersion: appVersion,
-            appBuild: appBuild,
-            programs: programs,
-            workouts: workouts,
-            movies: movies,
-            series: series,
-            animes: animes,
-            games: games,
-            projects: projects,
-            learnings: learnings,
-            favorites: favorites,
-            settings: settings
-        )
+        self.checksum = Self.computeChecksum(for: self)
     }
 
     init(from decoder: Decoder) throws {
@@ -106,40 +91,16 @@ struct NexoraBackup: Codable {
     }
 
     /// Calcule le SHA256 de la sauvegarde (sans le champ checksum).
-    private static func computeChecksum(
-        version: Int,
-        exportDate: Date,
-        appVersion: String,
-        appBuild: String,
-        programs: [BackupProgram],
-        workouts: [BackupWorkout],
-        movies: [BackupMovie],
-        series: [BackupSerie],
-        animes: [BackupAnime],
-        games: [BackupGame],
-        projects: [BackupProject],
-        learnings: [BackupLearning],
-        favorites: [BackupFavorite],
-        settings: BackupSettings?
-    ) -> String {
-        // Encode manually without checksum field
-        var dict: [String: Any] = [:]
-        dict["version"] = version
-        dict["exportDate"] = ISO8601DateFormatter().string(from: exportDate)
-        dict["appVersion"] = appVersion
-        dict["appBuild"] = appBuild
-        dict["programs"] = programs
-        dict["workouts"] = workouts
-        dict["movies"] = movies
-        dict["series"] = series
-        dict["animes"] = animes
-        dict["games"] = games
-        dict["projects"] = projects
-        dict["learnings"] = learnings
-        dict["favorites"] = favorites
-        dict["settings"] = settings
-
-        let data = try! JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys])
+    private static func computeChecksum(for backup: NexoraBackup) -> String {
+        // Encode the backup to JSON (without checksum) using JSONEncoder,
+        // then compute SHA256 on the resulting data.
+        // This avoids JSONSerialization issues with Swift structs.
+        var copy = backup
+        copy.checksum = nil
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        let data = try! encoder.encode(copy)
         let hash = SHA256.hash(data: data)
         return hash.compactMap { String(format: "%02x", $0) }.joined()
     }
@@ -147,22 +108,7 @@ struct NexoraBackup: Codable {
     /// Vérifie l'intégrité de la sauvegarde.
     func verifyChecksum() -> Bool {
         guard let expectedChecksum = checksum else { return true }
-        let computed = Self.computeChecksum(
-            version: version,
-            exportDate: exportDate,
-            appVersion: appVersion,
-            appBuild: appBuild,
-            programs: programs,
-            workouts: workouts,
-            movies: movies,
-            series: series,
-            animes: animes,
-            games: games,
-            projects: projects,
-            learnings: learnings,
-            favorites: favorites,
-            settings: settings
-        )
+        let computed = Self.computeChecksum(for: self)
         return computed == expectedChecksum
     }
 

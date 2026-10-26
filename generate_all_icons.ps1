@@ -1,5 +1,37 @@
 Add-Type -AssemblyName System.Drawing
 
+function Get-ContentBounds {
+    param([System.Drawing.Bitmap]$bitmap)
+    
+    $width = $bitmap.Width
+    $height = $bitmap.Height
+    $left = $width
+    $top = $height
+    $right = 0
+    $bottom = 0
+    $foundPixel = $false
+    
+    for ($y = 0; $y -lt $height; $y++) {
+        for ($x = 0; $x -lt $width; $x++) {
+            $pixel = $bitmap.GetPixel($x, $y)
+            # Check if pixel is not fully transparent (alpha > 0)
+            if ($pixel.A -gt 0) {
+                $foundPixel = $true
+                if ($x -lt $left) { $left = $x }
+                if ($x -gt $right) { $right = $x }
+                if ($y -lt $top) { $top = $y }
+                if ($y -gt $bottom) { $bottom = $y }
+            }
+        }
+    }
+    
+    if (-not $foundPixel) {
+        return @{ Left = 0; Top = 0; Width = $width; Height = $height }
+    }
+    
+    return @{ Left = $left; Top = $top; Width = $right - $left + 1; Height = $bottom - $top + 1 }
+}
+
 $logoVariants = @(
     @{ Name = "Classic"; SourceDir = "NexoraLogo.imageset"; BaseName = "NexoraLogo"; AppIconSetName = "AppIcon"; Prefix = "" },
     @{ Name = "Classic"; SourceDir = "NexoraLogo.imageset"; BaseName = "NexoraLogo"; AppIconSetName = "AppIcon-Classic"; Prefix = "Classic-" },
@@ -40,6 +72,19 @@ foreach ($variant in $logoVariants) {
     }
 
     $sourceImg = [System.Drawing.Image]::FromFile($sourceFile)
+    
+    # Crop to content bounds (remove transparent padding)
+    $bounds = Get-ContentBounds -bitmap $sourceImg
+    Write-Host "Source $($variant.Name): Content bounds = $($bounds.Width)x$($bounds.Height) at ($($bounds.Left), $($bounds.Top))"
+    
+    $croppedSource = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+    $cropGraphics = [System.Drawing.Graphics]::FromImage($croppedSource)
+    $cropGraphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $cropGraphics.DrawImage($sourceImg, 
+        [System.Drawing.Rectangle]::FromLTRB(0, 0, $bounds.Width, $bounds.Height),
+        [System.Drawing.Rectangle]::FromLTRB($bounds.Left, $bounds.Top, $bounds.Left + $bounds.Width, $bounds.Top + $bounds.Height),
+        [System.Drawing.GraphicsUnit]::Pixel)
+    $cropGraphics.Dispose()
 
     $targetDir = "$basePath\$($variant.AppIconSetName).appiconset"
     if (-not (Test-Path $targetDir)) {
@@ -59,8 +104,16 @@ foreach ($variant in $logoVariants) {
         # Fill with white background first (opaque)
         $graphics.Clear([System.Drawing.Color]::White)
         
-        # Draw source image
-        $graphics.DrawImage($sourceImg, 0, 0, $pixelSize, $pixelSize)
+        # Draw cropped source image centered
+        $srcWidth = $croppedSource.Width
+        $srcHeight = $croppedSource.Height
+        $scale = [Math]::Min($pixelSize / $srcWidth, $pixelSize / $srcHeight)
+        $drawWidth = [int]($srcWidth * $scale)
+        $drawHeight = [int]($srcHeight * $scale)
+        $x = [int](($pixelSize - $drawWidth) / 2)
+        $y = [int](($pixelSize - $drawHeight) / 2)
+        
+        $graphics.DrawImage($croppedSource, $x, $y, $drawWidth, $drawHeight)
         $graphics.Dispose()
 
         $filename = "AppIcon-$($variant.Prefix)$($iconSize.FilenameSuffix).png"
@@ -70,6 +123,7 @@ foreach ($variant in $logoVariants) {
     }
 
     $sourceImg.Dispose()
+    $croppedSource.Dispose()
 
     # Generate Contents.json for this appiconset
     $images = @()
@@ -103,4 +157,4 @@ foreach ($variant in $logoVariants) {
     Write-Host "Created Contents.json for $($variant.AppIconSetName)"
 }
 
-Write-Host "Done generating all icons (OPAQUE)!"
+Write-Host "Done generating all icons (OPAQUE, cropped to content)!"
