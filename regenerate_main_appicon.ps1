@@ -32,17 +32,24 @@ $iconSizes = @(
 
 foreach ($iconSize in $iconSizes) {
     $pixelSize = [int]($iconSize.Size * $iconSize.Scale)
-    $bitmap = New-Object System.Drawing.Bitmap($pixelSize, $pixelSize)
+    
+    # Create bitmap WITHOUT alpha channel (Format24bppRgb = opaque)
+    $bitmap = New-Object System.Drawing.Bitmap($pixelSize, $pixelSize, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
     $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+    
+    # Fill with white background first (opaque)
+    $graphics.Clear([System.Drawing.Color]::White)
+    
     $graphics.DrawImage($sourceImg, 0, 0, $pixelSize, $pixelSize)
     $graphics.Dispose()
-    
+
     $filename = "AppIcon-$($iconSize.FilenameSuffix).png"
     $bitmap.Save("$targetDir\$filename", [System.Drawing.Imaging.ImageFormat]::Png)
     $bitmap.Dispose()
-    Write-Host "Generated: $targetDir\$filename ($pixelSize x $pixelSize)"
+    Write-Host "Generated: $targetDir\$filename ($pixelSize x $pixelSize) - OPAQUE"
 }
 
 $sourceImg.Dispose()
-Write-Host "Done generating main AppIcon!"
+Write-Host "Done generating main AppIcon (OPAQUE)!"

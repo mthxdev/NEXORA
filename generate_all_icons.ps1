@@ -38,32 +38,39 @@ foreach ($variant in $logoVariants) {
         Write-Host "Source not found: $sourceFile"
         continue
     }
-    
+
     $sourceImg = [System.Drawing.Image]::FromFile($sourceFile)
-    
+
     $targetDir = "$basePath\$($variant.AppIconSetName).appiconset"
     if (-not (Test-Path $targetDir)) {
         New-Item -ItemType Directory -Path $targetDir | Out-Null
     }
-    
-    # Generate all icon sizes
+
+    # Generate all icon sizes - OPAQUE (no alpha channel)
     foreach ($iconSize in $iconSizes) {
         $pixelSize = [int]($iconSize.Size * $iconSize.Scale)
-        $bitmap = New-Object System.Drawing.Bitmap($pixelSize, $pixelSize)
+        
+        # Create bitmap WITHOUT alpha channel (Format24bppRgb = opaque)
+        $bitmap = New-Object System.Drawing.Bitmap($pixelSize, $pixelSize, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
         $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
         $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
         $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+        
+        # Fill with white background first (opaque)
+        $graphics.Clear([System.Drawing.Color]::White)
+        
+        # Draw source image
         $graphics.DrawImage($sourceImg, 0, 0, $pixelSize, $pixelSize)
         $graphics.Dispose()
-        
+
         $filename = "AppIcon-$($variant.Prefix)$($iconSize.FilenameSuffix).png"
         $bitmap.Save("$targetDir\$filename", [System.Drawing.Imaging.ImageFormat]::Png)
         $bitmap.Dispose()
-        Write-Host "Generated: $targetDir\$filename ($pixelSize x $pixelSize)"
+        Write-Host "Generated: $targetDir\$filename ($pixelSize x $pixelSize) - OPAQUE"
     }
-    
+
     $sourceImg.Dispose()
-    
+
     # Generate Contents.json for this appiconset
     $images = @()
     foreach ($iconSize in $iconSizes) {
@@ -73,9 +80,9 @@ foreach ($variant in $logoVariants) {
         $size = "$($iconSize.Size)x$($iconSize.Size)"
         $scaleStr = "${scale}x"
         if ($scale -eq 1) { $scaleStr = "1x" }
-        
+
         $filename = "AppIcon-$($variant.Prefix)$($iconSize.FilenameSuffix).png"
-        
+
         $images += @{
             idiom = $idiom
             size = $size
@@ -83,7 +90,7 @@ foreach ($variant in $logoVariants) {
             filename = $filename
         }
     }
-    
+
     $json = @{
         images = $images
         info = @{
@@ -91,9 +98,9 @@ foreach ($variant in $logoVariants) {
             version = 1
         }
     } | ConvertTo-Json -Depth 5
-    
+
     $json | Set-Content -Path "$targetDir\Contents.json" -Encoding UTF8
     Write-Host "Created Contents.json for $($variant.AppIconSetName)"
 }
 
-Write-Host "Done generating all icons!"
+Write-Host "Done generating all icons (OPAQUE)!"
