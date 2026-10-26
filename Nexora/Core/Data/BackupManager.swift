@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import CryptoKit
 
 /// Résultat d'une restauration, destiné à l'interface.
 struct RestoreReport {
@@ -20,6 +21,8 @@ enum BackupError: LocalizedError {
     case saveFailed(String)
     case noBackupFolderSelected
     case securityScopeFailed
+    case checksumMismatch
+    case preRestoreSnapshotFailed
 
     var errorDescription: String? {
         switch self {
@@ -37,6 +40,10 @@ enum BackupError: LocalizedError {
             return "Aucun dossier de sauvegarde externe n'a été choisi. Allez dans Réglages > Sauvegarde pour en choisir un."
         case .securityScopeFailed:
             return "Impossible d'accéder au dossier de sauvegarde. Veuillez le sélectionner à nouveau dans les réglages."
+        case .checksumMismatch:
+            return "La sauvegarde est corrompue (somme de contrôle invalide). Le fichier a peut-être été modifié ou tronqué."
+        case .preRestoreSnapshotFailed:
+            return "Impossible de créer l'instantané de sécurité avant restauration."
         }
     }
 }
@@ -51,8 +58,14 @@ final class BackupManager {
     /// Survit à un crash de l'application pendant la restauration.
     static let restoreFallbackFileName = ".Nexora_Restore_Fallback.json"
 
+    /// Fichier d'instantané pré-restauration (accessible à l'utilisateur pour recovery manuel).
+    static let preRestoreSnapshotFileName = "Nexora_PreRestore_Snapshot.json"
+
     /// Clé UserDefaults pour stocker le bookmark du dossier de sauvegarde externe.
     private static let backupFolderBookmarkKey = "externalBackupFolderBookmark"
+
+    /// Nombre maximum de sauvegardes externes à conserver (rotation).
+    private static let maxExternalBackups = 10
 
     private static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
@@ -211,13 +224,39 @@ final class BackupManager {
         let data = try Self.encoder.encode(backup)
         let fileName = "Nexora_Sauvegarde_\(ISO8601DateFormatter().string(from: Date())).json"
         let url = folderURL.appendingPathComponent(fileName)
-        
+
         try data.write(to: url, options: .atomic)
-        
+
+        // Rotation : supprimer les plus anciennes sauvegardes externes
+        try rotateExternalBackups(in: folderURL)
+
         // Mettre à jour la date de dernière sauvegarde externe
         UserDefaults.standard.set(Date(), forKey: "lastExternalBackupDate")
-        
+
         return url
+    }
+
+    /// Garde seulement les N dernières sauvegardes externes (par date de modification).
+    @MainActor
+    private func rotateExternalBackups(in folderURL: URL) throws {
+        let files = try FileManager.default.contentsOfDirectory(
+            at: folderURL,
+            includingPropertiesForKeys: [.contentModificationDateKey],
+            options: .skipsHiddenFiles
+        )
+        let backupFiles = files.filter { $0.lastPathComponent.hasPrefix("Nexora_Sauvegarde_") && $0.pathExtension == "json" }
+        if backupFiles.count > Self.maxExternalBackups {
+            let sorted = try backupFiles.sorted { lhs, rhs in
+                let lhsDate = try lhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate ?? .distantPast
+                let rhsDate = try rhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate ?? .distantPast
+                return lhsDate < rhsDate
+            }
+            let toDelete = sorted.prefix(backupFiles.count - Self.maxExternalBackups)
+            for url in toDelete {
+                try? FileManager.default.removeItem(at: url)
+                print("BackupManager: ancienne sauvegarde externe supprimée (rotation) — \(url.lastPathComponent)")
+            }
+        }
     }
 
     /// Sauvegarde externe déclenchée après une opération importante (version synchrone pour Task.detached).
@@ -237,7 +276,7 @@ final class BackupManager {
         do {
             let url = try writeBackup(context: context)
             UserDefaults.standard.set(Date(), forKey: "lastAutoBackupDate")
-            
+
             // Si un dossier externe est configuré, faire aussi une sauvegarde externe
             if hasExternalBackupFolder {
                 do {
@@ -246,7 +285,7 @@ final class BackupManager {
                     print("BackupManager: sauvegarde externe automatique impossible — \(error)")
                 }
             }
-            
+
             return url
         } catch {
             print("BackupManager: sauvegarde automatique impossible — \(error)")
@@ -258,11 +297,11 @@ final class BackupManager {
     @MainActor
     func backupAfterImportantOperation(context: ModelContext) {
         guard hasExternalBackupFolder else { return }
-        
+
         // Éviter les sauvegardes trop fréquentes (minimum 5 minutes)
         let lastDate = UserDefaults.standard.object(forKey: "lastExternalBackupDate") as? Date ?? .distantPast
         guard Date().timeIntervalSince(lastDate) > 300 else { return }
-        
+
         Task.detached { @MainActor [weak self] in
             guard let self else { return }
             do {
@@ -300,7 +339,26 @@ final class BackupManager {
         guard backup.objectCount > 0 else {
             throw BackupError.emptyBackup
         }
+
+        // Vérification d'intégrité (checksum) pour les versions >= 4
+        if backup.version >= 4 {
+            if !backup.verifyChecksum() {
+                throw BackupError.checksumMismatch
+            }
+        }
+
         return backup
+    }
+
+    /// Crée un instantané pré-restauration accessible à l'utilisateur.
+    /// Retourne l'URL du fichier créé.
+    @MainActor
+    func createPreRestoreSnapshot(context: ModelContext) throws -> URL {
+        let fallback = try makeBackup(context: context)
+        let data = try Self.encoder.encode(fallback)
+        let url = try Self.documentsURL(fileName: Self.preRestoreSnapshotFileName)
+        try data.write(to: url, options: .atomic)
+        return url
     }
 
     /// Remplace les données par le contenu de la sauvegarde.
@@ -312,7 +370,15 @@ final class BackupManager {
     @MainActor
     @discardableResult
     func restore(from backup: NexoraBackup, context: ModelContext) throws -> RestoreReport {
-        // 1. Snapshot en mémoire pour un rollback rapide.
+        // 1. Créer instantané pré-restauration accessible à l'utilisateur.
+        let preRestoreURL: URL
+        do {
+            preRestoreURL = try createPreRestoreSnapshot(context: context)
+        } catch {
+            throw BackupError.preRestoreSnapshotFailed
+        }
+
+        // 2. Snapshot en mémoire pour un rollback rapide.
         let fallback: NexoraBackup
         do {
             fallback = try makeBackup(context: context)
@@ -320,7 +386,7 @@ final class BackupManager {
             throw BackupError.saveFailed("instantané de sécurité impossible (\(error.localizedDescription))")
         }
 
-        // 2. Snapshot sur disque : résiste à un crash de l'application.
+        // 3. Snapshot sur disque : résiste à un crash de l'application.
         let fallbackURL: URL? = try? Self.documentsURL(fileName: Self.restoreFallbackFileName)
         if let fallbackURL {
             do {
@@ -331,13 +397,13 @@ final class BackupManager {
             }
         }
 
-        // 3. Opération de restauration.
+        // 4. Opération de restauration.
         do {
             try deleteAllData(context: context)
             try insert(backup, into: context)
             try context.save()
         } catch {
-            // 4. Tentative de rollback depuis le snapshot en mémoire.
+            // 5. Tentative de rollback depuis le snapshot en mémoire.
             let restoreError = error
             do {
                 try deleteAllData(context: context)
@@ -347,7 +413,7 @@ final class BackupManager {
             } catch {
                 print("BackupManager: rollback mémoire échoué — \(error)")
 
-                // 5. Dernier recours : snapshot sur disque.
+                // 6. Dernier recours : snapshot sur disque.
                 if let diskURL = fallbackURL,
                    FileManager.default.fileExists(atPath: diskURL.path) {
                     do {
@@ -371,12 +437,12 @@ final class BackupManager {
             }
         }
 
-        // 6. Nettoyage du fichier de secours.
+        // 7. Nettoyage du fichier de secours (crash recovery).
         if let fallbackURL {
             try? FileManager.default.removeItem(at: fallbackURL)
         }
 
-        // 7. Application des réglages et retour du rapport.
+        // 8. Application des réglages et retour du rapport.
         applySettings(backup.settings)
 
         return RestoreReport(
@@ -437,6 +503,27 @@ final class BackupManager {
 
         try? FileManager.default.removeItem(at: fallbackURL)
         return true
+    }
+
+    /// Vérifie si un instantané pré-restauration existe.
+    @MainActor
+    func hasPreRestoreSnapshot() -> Bool {
+        guard let url = try? Self.documentsURL(fileName: Self.preRestoreSnapshotFileName) else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    /// Restaure depuis l'instantané pré-restauration (recovery manuel utilisateur).
+    @MainActor
+    @discardableResult
+    func restoreFromPreRestoreSnapshot(context: ModelContext) throws -> RestoreReport {
+        guard let url = try? Self.documentsURL(fileName: Self.preRestoreSnapshotFileName),
+              FileManager.default.fileExists(atPath: url.path) else {
+            throw BackupError.unreadableFile
+        }
+
+        let data = try Data(contentsOf: url)
+        let backup = try decodeBackup(from: data)
+        return try restore(from: backup, context: context)
     }
 
     // MARK: - Suppression

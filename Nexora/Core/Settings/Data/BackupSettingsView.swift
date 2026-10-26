@@ -136,11 +136,16 @@ struct BackupSettingsView: View {
         MainActor.assumeIsolated { BackupManager.shared.hasExternalBackupFolder }
     }
 
+    private var hasPreRestoreSnapshot: Bool {
+        MainActor.assumeIsolated { BackupManager.shared.hasPreRestoreSnapshot() }
+    }
+
     var body: some View {
         List {
             externalBackupSection
             backupSection
             dangerSection
+            recoverySection
         }
         .sheet(isPresented: $showingShareSheet) {
             if let exportURL {
@@ -309,6 +314,52 @@ struct BackupSettingsView: View {
             Text("Zone de danger")
         } footer: {
             Text("Efface les données de tous les modules : MuscuLog, LogBook et Repas. Action irréversible.")
+        }
+    }
+
+    private var recoverySection: some View {
+        Section {
+            if hasPreRestoreSnapshot {
+                Label("Instantané pré-restauration disponible", systemImage: "clock.arrow.circlepath")
+                    .foregroundStyle(.orange)
+                Button {
+                    Task {
+                        do {
+                            let report = try await MainActor.assumeIsolated {
+                                try BackupManager.shared.restoreFromPreRestoreSnapshot(context: modelContext)
+                            }
+                            await MainActor.run {
+                                present(
+                                    title: "Récupération réussie",
+                                    message: """
+                                    \(report.programs) programme(s), \(report.workouts) séance(s), \
+                                    \(report.logBookEntries) élément(s) de LogBook et \
+                                    \(report.favorites) favori(s) restaurés depuis l'instantané.
+                                    """
+                                )
+                            }
+                        } catch {
+                            await MainActor.run {
+                                present(title: "Récupération impossible", message: error.localizedDescription)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Restaurer depuis l'instantané", systemImage: "arrow.uturn.backward")
+                }
+                .accessibilityHint("Restaure l'état avant la dernière restauration ou importation")
+            } else {
+                Text("Aucun instantané de récupération disponible.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Récupération d'urgence")
+        } footer: {
+            Text("""
+                Un instantané est automatiquement créé avant chaque restauration. \
+                S'il y a un problème après une restauration, utilisez cette option pour revenir en arrière.
+                """)
         }
     }
 

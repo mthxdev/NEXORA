@@ -1,6 +1,7 @@
 import Foundation
+import CryptoKit
 
-// MARK: - Format de sauvegarde Nexora (version 3)
+// MARK: - Format de sauvegarde Nexora (version 4)
 
 /// Sauvegarde complète des données Nexora.
 ///
@@ -9,12 +10,15 @@ import Foundation
 struct NexoraBackup: Codable {
     /// Version du format. Incrémentée uniquement lors d'un changement
     /// incompatible ; l'ajout d'un champ optionnel ne change pas la version.
-    static let currentVersion = 3
+    static let currentVersion = 4
 
     let version: Int
     let exportDate: Date
     let appVersion: String
     let appBuild: String
+
+    /// SHA256 du contenu JSON (sans ce champ) pour vérification d'intégrité.
+    let checksum: String?
 
     var programs: [BackupProgram] = []
     var workouts: [BackupWorkout] = []
@@ -31,6 +35,7 @@ struct NexoraBackup: Codable {
         case version, exportDate, appVersion, appBuild
         case programs, workouts, movies, series, animes, games
         case projects, learnings, favorites, settings
+        case checksum
     }
 
     init(
@@ -63,6 +68,7 @@ struct NexoraBackup: Codable {
         self.learnings = learnings
         self.favorites = favorites
         self.settings = settings
+        self.checksum = Self.computeChecksum(for: self)
     }
 
     init(from decoder: Decoder) throws {
@@ -81,6 +87,26 @@ struct NexoraBackup: Codable {
         learnings = try container.decodeIfPresent([BackupLearning].self, forKey: .learnings) ?? []
         favorites = try container.decodeIfPresent([BackupFavorite].self, forKey: .favorites) ?? []
         settings = try container.decodeIfPresent(BackupSettings.self, forKey: .settings)
+        checksum = try container.decodeIfPresent(String.self, forKey: .checksum)
+    }
+
+    /// Calcule le SHA256 de la sauvegarde (sans le champ checksum).
+    private static func computeChecksum(for backup: NexoraBackup) -> String {
+        var copy = backup
+        copy.checksum = nil
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        let data = try! encoder.encode(copy)
+        let hash = SHA256.hash(data: data)
+        return hash.compactMap { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Vérifie l'intégrité de la sauvegarde.
+    func verifyChecksum() -> Bool {
+        guard let expectedChecksum = checksum else { return true }
+        let computed = Self.computeChecksum(for: self)
+        return computed == expectedChecksum
     }
 
     /// Nombre total d'objets métier contenus dans le fichier.
