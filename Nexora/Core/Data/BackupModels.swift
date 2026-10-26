@@ -18,7 +18,7 @@ struct NexoraBackup: Codable {
     let appBuild: String
 
     /// SHA256 du contenu JSON (sans ce champ) pour vérification d'intégrité.
-    let checksum: String?
+    var checksum: String?
 
     var programs: [BackupProgram] = []
     var workouts: [BackupWorkout] = []
