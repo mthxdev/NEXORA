@@ -1,112 +1,112 @@
 ﻿{
     "images":  [
                    {
-                       "Size":  "20x20",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-20@2x.png",
-                       "Idiom":  "iphone"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-20@2x.png",
+                       "idiom":  "iphone",
+                       "size":  "20x20"
                    },
                    {
-                       "Size":  "20x20",
-                       "Scale":  "3x",
-                       "Filename":  "AppIcon-20@3x.png",
-                       "Idiom":  "iphone"
+                       "scale":  "3x",
+                       "filename":  "AppIcon-Minimal-20@3x.png",
+                       "idiom":  "iphone",
+                       "size":  "20x20"
                    },
                    {
-                       "Size":  "29x29",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-29@2x.png",
-                       "Idiom":  "iphone"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-29@2x.png",
+                       "idiom":  "iphone",
+                       "size":  "29x29"
                    },
                    {
-                       "Size":  "29x29",
-                       "Scale":  "3x",
-                       "Filename":  "AppIcon-29@3x.png",
-                       "Idiom":  "iphone"
+                       "scale":  "3x",
+                       "filename":  "AppIcon-Minimal-29@3x.png",
+                       "idiom":  "iphone",
+                       "size":  "29x29"
                    },
                    {
-                       "Size":  "40x40",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-40@2x.png",
-                       "Idiom":  "iphone"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-40@2x.png",
+                       "idiom":  "iphone",
+                       "size":  "40x40"
                    },
                    {
-                       "Size":  "40x40",
-                       "Scale":  "3x",
-                       "Filename":  "AppIcon-40@3x.png",
-                       "Idiom":  "iphone"
+                       "scale":  "3x",
+                       "filename":  "AppIcon-Minimal-40@3x.png",
+                       "idiom":  "iphone",
+                       "size":  "40x40"
                    },
                    {
-                       "Size":  "60x60",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-60@2x.png",
-                       "Idiom":  "iphone"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-60@2x.png",
+                       "idiom":  "iphone",
+                       "size":  "60x60"
                    },
                    {
-                       "Size":  "60x60",
-                       "Scale":  "3x",
-                       "Filename":  "AppIcon-60@3x.png",
-                       "Idiom":  "iphone"
+                       "scale":  "3x",
+                       "filename":  "AppIcon-Minimal-60@3x.png",
+                       "idiom":  "iphone",
+                       "size":  "60x60"
                    },
                    {
-                       "Size":  "20x20",
-                       "Scale":  "1x",
-                       "Filename":  "AppIcon-20~ipad.png",
-                       "Idiom":  "ipad"
+                       "scale":  "1x",
+                       "filename":  "AppIcon-Minimal-20~ipad.png",
+                       "idiom":  "ipad",
+                       "size":  "20x20"
                    },
                    {
-                       "Size":  "20x20",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-20~ipad@2x.png",
-                       "Idiom":  "ipad"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-20~ipad@2x.png",
+                       "idiom":  "ipad",
+                       "size":  "20x20"
                    },
                    {
-                       "Size":  "29x29",
-                       "Scale":  "1x",
-                       "Filename":  "AppIcon-29@1x.png",
-                       "Idiom":  "ipad"
+                       "scale":  "1x",
+                       "filename":  "AppIcon-Minimal-29@1x.png",
+                       "idiom":  "ipad",
+                       "size":  "29x29"
                    },
                    {
-                       "Size":  "29x29",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-29@2x.png",
-                       "Idiom":  "ipad"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-29@2x.png",
+                       "idiom":  "ipad",
+                       "size":  "29x29"
                    },
                    {
-                       "Size":  "40x40",
-                       "Scale":  "1x",
-                       "Filename":  "AppIcon-40@1x.png",
-                       "Idiom":  "ipad"
+                       "scale":  "1x",
+                       "filename":  "AppIcon-Minimal-40@1x.png",
+                       "idiom":  "ipad",
+                       "size":  "40x40"
                    },
                    {
-                       "Size":  "40x40",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-40@2x.png",
-                       "Idiom":  "ipad"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-40@2x.png",
+                       "idiom":  "ipad",
+                       "size":  "40x40"
                    },
                    {
-                       "Size":  "76x76",
-                       "Scale":  "1x",
-                       "Filename":  "AppIcon-76@1x.png",
-                       "Idiom":  "ipad"
+                       "scale":  "1x",
+                       "filename":  "AppIcon-Minimal-76@1x.png",
+                       "idiom":  "ipad",
+                       "size":  "76x76"
                    },
                    {
-                       "Size":  "76x76",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-76@2x.png",
-                       "Idiom":  "ipad"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-76@2x.png",
+                       "idiom":  "ipad",
+                       "size":  "76x76"
                    },
                    {
-                       "Size":  "83.5x83.5",
-                       "Scale":  "2x",
-                       "Filename":  "AppIcon-83.5@2x.png",
-                       "Idiom":  "ipad"
+                       "scale":  "2x",
+                       "filename":  "AppIcon-Minimal-83.5@2x.png",
+                       "idiom":  "ipad",
+                       "size":  "83.5x83.5"
                    },
                    {
-                       "Size":  "1024x1024",
-                       "Scale":  "1x",
-                       "Filename":  "AppIcon-1024.png",
-                       "Idiom":  "ios-marketing"
+                       "scale":  "1x",
+                       "filename":  "AppIcon-Minimal-1024.png",
+                       "idiom":  "ios-marketing",
+                       "size":  "1024x1024"
                    }
                ],
     "info":  {
