@@ -69,38 +69,49 @@ final class BackupManager {
 
     // MARK: - External Backup Folder Management
 
-    /// URL du dossier de sauvegarde externe choisi par l'utilisateur (si configuré).
+    /// Bookmark data for the external backup folder (stored in UserDefaults).
+    @MainActor
+    private var backupFolderBookmarkData: Data? {
+        get { UserDefaults.standard.data(forKey: Self.backupFolderBookmarkKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Self.backupFolderBookmarkKey) }
+    }
+
+    /// Résout l'URL du dossier externe à partir du bookmark stocké.
+    @MainActor
+    private func resolveExternalBackupFolder() -> URL? {
+        guard let bookmarkData = backupFolderBookmarkData else { return nil }
+        var isStale = false
+        do {
+            // Use .withSecurityScope for iOS 14+ security-scoped bookmarks
+            let url = try URL(
+                resolvingBookmarkData: bookmarkData,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+            if isStale {
+                // Refresh stale bookmark
+                let newBookmark = try url.bookmarkData(
+                    options: .withSecurityScope,
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                )
+                backupFolderBookmarkData = newBookmark
+            }
+            // Start accessing the security-scoped resource
+            guard url.startAccessingSecurityScopedResource() else {
+                return nil
+            }
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    /// URL du dossier de sauvegarde externe choisi par l'utilisateur (si configuré et accessible).
     @MainActor
     var externalBackupFolderURL: URL? {
-        get {
-            guard let bookmarkData = UserDefaults.standard.data(forKey: Self.backupFolderBookmarkKey) else {
-                return nil
-            }
-            var isStale = false
-            do {
-                let url = try URL(resolvingBookmarkData: bookmarkData, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &isStale)
-                if isStale {
-                    // Bookmark is stale, try to refresh it
-                    let newBookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                    UserDefaults.standard.set(newBookmark, forKey: Self.backupFolderBookmarkKey)
-                }
-                return url
-            } catch {
-                return nil
-            }
-        }
-        set {
-            if let url = newValue {
-                do {
-                    let bookmarkData = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                    UserDefaults.standard.set(bookmarkData, forKey: Self.backupFolderBookmarkKey)
-                } catch {
-                    print("BackupManager: failed to save folder bookmark — \(error)")
-                }
-            } else {
-                UserDefaults.standard.removeObject(forKey: Self.backupFolderBookmarkKey)
-            }
-        }
+        resolveExternalBackupFolder()
     }
 
     /// Vérifie si un dossier de sauvegarde externe est configuré et accessible.
@@ -112,13 +123,22 @@ final class BackupManager {
     /// Configure le dossier de sauvegarde externe à partir d'une URL choisie par l'utilisateur.
     @MainActor
     func setExternalBackupFolder(_ url: URL) {
-        externalBackupFolderURL = url
+        do {
+            let bookmark = try url.bookmarkData(
+                options: .withSecurityScope,
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            )
+            backupFolderBookmarkData = bookmark
+        } catch {
+            print("BackupManager: failed to save folder bookmark — \(error)")
+        }
     }
 
     /// Supprime la référence au dossier de sauvegarde externe.
     @MainActor
     func clearExternalBackupFolder() {
-        externalBackupFolderURL = nil
+        backupFolderBookmarkData = nil
     }
 
     // MARK: - Export
@@ -184,13 +204,8 @@ final class BackupManager {
         guard let folderURL = externalBackupFolderURL else {
             throw BackupError.noBackupFolderSelected
         }
-
-        // Accéder au scope de sécurité
-        let needsScope = folderURL.startAccessingSecurityScopedResource()
-        guard needsScope else {
-            throw BackupError.securityScopeFailed
-        }
-        defer { folderURL.stopAccessingSecurityScopedResource() }
+        // The URL from resolveExternalBackupFolder already has security scope started
+        // No need to call startAccessingSecurityScopedResource again
 
         let backup = try makeBackup(context: context)
         let data = try Self.encoder.encode(backup)
@@ -203,6 +218,12 @@ final class BackupManager {
         UserDefaults.standard.set(Date(), forKey: "lastExternalBackupDate")
         
         return url
+    }
+
+    /// Sauvegarde externe déclenchée après une opération importante (version synchrone pour Task.detached).
+    @MainActor
+    func performExternalBackup(context: ModelContext) throws -> URL {
+        try writeExternalBackup(context: context)
     }
 
     /// Sauvegarde automatique, appelée au lancement et après une séance.
@@ -242,47 +263,20 @@ final class BackupManager {
         let lastDate = UserDefaults.standard.object(forKey: "lastExternalBackupDate") as? Date ?? .distantPast
         guard Date().timeIntervalSince(lastDate) > 300 else { return }
         
-        Task.detached {
+        Task.detached { @MainActor [weak self] in
+            guard let self else { return }
             do {
-                try await self.writeExternalBackupAsync(context: context)
+                try self.writeExternalBackup(context: context)
             } catch {
                 print("BackupManager: sauvegarde externe asynchrone impossible — \(error)")
             }
         }
     }
 
-    private func writeExternalBackupAsync(context: ModelContext) async throws {
-        try await MainActor.run {
-            try self.writeExternalBackup(context: context)
-        }
-    }
-
-    /// Sauvegarde automatique, appelée au lancement et après une séance.
-    ///
-    /// Écrit dans le dossier Documents de l'application, exposé dans Fichiers
-    /// grâce à `UIFileSharingEnabled`. Ce fichier **ne survit pas** à une
-    /// désinstallation : ce n'est pas une sauvegarde externe.
+    /// Vérifie si un dossier de sauvegarde externe est configuré et accessible.
     @MainActor
-    @discardableResult
-    func autoBackup(context: ModelContext) -> URL? {
-        do {
-            let url = try writeBackup(context: context)
-            UserDefaults.standard.set(Date(), forKey: "lastAutoBackupDate")
-            
-            // Si un dossier externe est configuré, faire aussi une sauvegarde externe
-            if hasExternalBackupFolder {
-                do {
-                    try writeExternalBackup(context: context)
-                } catch {
-                    print("BackupManager: sauvegarde externe automatique impossible — \(error)")
-                }
-            }
-            
-            return url
-        } catch {
-            print("BackupManager: sauvegarde automatique impossible — \(error)")
-            return nil
-        }
+    var hasExternalBackupFolder: Bool {
+        externalBackupFolderURL != nil
     }
 
     /// Date de la dernière sauvegarde automatique réussie.
@@ -477,5 +471,217 @@ final class BackupManager {
             throw BackupError.unreadableFile
         }
         return docs.appendingPathComponent(fileName)
+    }
+
+    // MARK: - Helpers pour la sérialisation
+
+    private static func backupProgram(from program: Program) -> BackupProgram {
+        BackupProgram(
+            id: program.id,
+            name: program.name,
+            createdAt: program.createdAt,
+            workouts: program.workouts.map { BackupWorkoutTemplate(
+                id: $0.id,
+                name: $0.name,
+                displayOrder: $0.displayOrder,
+                exercises: $0.exercises.map { BackupExerciseTemplate(
+                    id: $0.id,
+                    name: $0.name,
+                    targetSets: $0.targetSets,
+                    targetReps: $0.targetReps,
+                    displayOrder: $0.displayOrder
+                )}
+            )}
+        )
+    }
+
+    private static func backupWorkout(from workout: CompletedWorkout) -> BackupWorkout {
+        BackupWorkout(
+            id: workout.id,
+            date: workout.date,
+            startedAt: workout.startedAt,
+            finishedAt: workout.finishedAt,
+            programName: workout.programName,
+            workoutName: workout.workoutName,
+            exercises: workout.exercises.sorted(by: { $0.displayOrder < $1.displayOrder }).map {
+                BackupExercise(
+                    exerciseName: $0.exerciseName,
+                    displayOrder: $0.displayOrder,
+                    sets: $0.sets.sorted(by: { $0.setNumber < $1.setNumber }).map {
+                        BackupSet(weight: $0.weight, reps: $0.reps, setNumber: $0.setNumber)
+                    }
+                )
+            }
+        )
+    }
+
+    private static func backupMovie(from movie: MovieEntry) -> BackupMovie {
+        BackupMovie(
+            id: movie.id,
+            title: movie.title,
+            description: movie.movieDescription,
+            status: movie.status.rawValue,
+            dateAdded: movie.dateAdded,
+            dateWatched: movie.dateWatched,
+            personalRating: movie.personalRating,
+            personalComment: movie.personalComment,
+            isFavorite: movie.isFavorite,
+            externalID: movie.externalID,
+            posterURL: movie.posterURL,
+            releaseYear: movie.releaseYear
+        )
+    }
+
+    private static func backupSerie(from series: SeriesEntry) -> BackupSerie {
+        BackupSerie(
+            id: series.id,
+            title: series.title,
+            description: series.seriesDescription,
+            status: series.status.rawValue,
+            dateAdded: series.dateAdded,
+            dateCompleted: series.dateCompleted,
+            currentSeason: series.currentSeason,
+            currentEpisode: series.currentEpisode,
+            totalSeasons: series.totalSeasons,
+            totalEpisodes: series.totalEpisodes,
+            personalRating: series.personalRating,
+            personalComment: series.personalComment,
+            isFavorite: series.isFavorite,
+            externalID: series.externalID,
+            posterURL: series.posterURL,
+            firstAirYear: series.firstAirYear
+        )
+    }
+
+    private static func backupAnime(from anime: AnimeEntry) -> BackupAnime {
+        BackupAnime(
+            id: anime.id,
+            title: anime.title,
+            description: anime.animeDescription,
+            status: anime.status.rawValue,
+            dateAdded: anime.dateAdded,
+            dateCompleted: anime.dateCompleted,
+            currentSeason: anime.currentSeason,
+            currentEpisode: anime.currentEpisode,
+            totalSeasons: anime.totalSeasons,
+            totalEpisodes: anime.totalEpisodes,
+            personalRating: anime.personalRating,
+            personalComment: anime.personalComment,
+            isFavorite: anime.isFavorite,
+            externalID: anime.externalID,
+            posterURL: anime.posterURL,
+            firstAirYear: anime.firstAirYear,
+            isMovie: anime.isMovie
+        )
+    }
+
+    private static func backupGame(from game: GameEntry) -> BackupGame {
+        BackupGame(
+            id: game.id,
+            title: game.title,
+            description: game.gameDescription,
+            platform: game.platform,
+            status: game.status.rawValue,
+            dateAdded: game.dateAdded,
+            dateCompleted: game.dateCompleted,
+            personalRating: game.personalRating,
+            personalComment: game.personalComment,
+            isFavorite: game.isFavorite,
+            externalID: game.externalID,
+            coverURL: game.coverURL,
+            releaseYear: game.releaseYear,
+            playtimeHours: game.playtimeHours
+        )
+    }
+
+    private static func backupProject(from project: ProjectEntry) -> BackupProject {
+        BackupProject(
+            id: project.id,
+            name: project.name,
+            description: project.projectDescription,
+            status: project.status.rawValue,
+            priority: project.priority.rawValue,
+            dateCreated: project.dateCreated,
+            dateModified: project.dateModified,
+            dateCompleted: project.dateCompleted,
+            goal: project.goal,
+            nextStep: project.nextStep,
+            notes: project.notes,
+            isFavorite: project.isFavorite
+        )
+    }
+
+    private static func backupLearning(from learning: LearningEntry) -> BackupLearning {
+        BackupLearning(
+            id: learning.id,
+            name: learning.name,
+            description: learning.learningDescription,
+            status: learning.status.rawValue,
+            dateStarted: learning.dateStarted,
+            dateCompleted: learning.dateCompleted,
+            dateLastUpdated: learning.dateLastUpdated,
+            goal: learning.goal,
+            notes: learning.notes,
+            resources: learning.resources,
+            isFavorite: learning.isFavorite
+        )
+    }
+
+    private static func backupWorkout(from template: WorkoutTemplate) -> BackupWorkoutTemplate {
+        BackupWorkoutTemplate(
+            id: template.id,
+            name: template.name,
+            displayOrder: template.displayOrder,
+            exercises: template.exercises.map { BackupExerciseTemplate(
+                id: $0.id,
+                name: $0.name,
+                targetSets: $0.targetSets,
+                targetReps: $0.targetReps,
+                displayOrder: $0.displayOrder
+            )}
+        )
+    }
+
+    private static func backupExercise(from template: ExerciseTemplate) -> BackupExerciseTemplate {
+        BackupExerciseTemplate(
+            id: template.id,
+            name: template.name,
+            targetSets: template.targetSets,
+            targetReps: template.targetReps,
+            displayOrder: template.displayOrder
+        )
+    }
+
+    private static func backupProject(from template: ProjectEntry) -> BackupProject {
+        BackupProject(
+            id: template.id,
+            name: template.name,
+            description: template.projectDescription,
+            status: template.status.rawValue,
+            priority: template.priority.rawValue,
+            dateCreated: template.dateCreated,
+            dateModified: template.dateModified,
+            dateCompleted: template.dateCompleted,
+            goal: template.goal,
+            nextStep: template.nextStep,
+            notes: template.notes,
+            isFavorite: template.isFavorite
+        )
+    }
+
+    private static func backupLearning(from learning: LearningEntry) -> BackupLearning {
+        BackupLearning(
+            id: learning.id,
+            name: learning.name,
+            description: learning.learningDescription,
+            status: learning.status.rawValue,
+            dateStarted: learning.dateStarted,
+            dateCompleted: learning.dateCompleted,
+            dateLastUpdated: learning.dateLastUpdated,
+            goal: learning.goal,
+            notes: learning.notes,
+            resources: learning.resources,
+            isFavorite: learning.isFavorite
+        )
     }
 }
