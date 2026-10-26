@@ -54,6 +54,26 @@ struct NexoraBackup: Codable {
         favorites: [BackupFavorite] = [],
         settings: BackupSettings? = nil
     ) {
+        // Create a temporary instance to compute checksum
+        let tempBackup = NexoraBackup(
+            version: version,
+            exportDate: exportDate,
+            appVersion: appVersion,
+            appBuild: appBuild,
+            programs: programs,
+            workouts: workouts,
+            movies: movies,
+            series: series,
+            animes: animes,
+            games: games,
+            projects: projects,
+            learnings: learnings,
+            favorites: favorites,
+            settings: settings,
+            checksum: nil
+        )
+        let computedChecksum = Self.computeChecksum(for: tempBackup)
+        
         self.version = version
         self.exportDate = exportDate
         self.appVersion = appVersion
@@ -68,7 +88,7 @@ struct NexoraBackup: Codable {
         self.learnings = learnings
         self.favorites = favorites
         self.settings = settings
-        self.checksum = Self.computeChecksum(for: self)
+        self.checksum = computedChecksum
     }
 
     init(from decoder: Decoder) throws {
@@ -92,12 +112,29 @@ struct NexoraBackup: Codable {
 
     /// Calcule le SHA256 de la sauvegarde (sans le champ checksum).
     private static func computeChecksum(for backup: NexoraBackup) -> String {
-        var copy = backup
-        copy.checksum = nil
+        // Create a copy without checksum by re-encoding all fields except checksum
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys]
-        let data = try! encoder.encode(copy)
+        
+        // Encode manually without checksum field
+        var dict: [String: Any] = [:]
+        dict["version"] = backup.version
+        dict["exportDate"] = ISO8601DateFormatter().string(from: backup.exportDate)
+        dict["appVersion"] = backup.appVersion
+        dict["appBuild"] = backup.appBuild
+        dict["programs"] = backup.programs
+        dict["workouts"] = backup.workouts
+        dict["movies"] = backup.movies
+        dict["series"] = backup.series
+        dict["animes"] = backup.animes
+        dict["games"] = backup.games
+        dict["projects"] = backup.projects
+        dict["learnings"] = backup.learnings
+        dict["favorites"] = backup.favorites
+        dict["settings"] = backup.settings
+        
+        let data = try! JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys])
         let hash = SHA256.hash(data: data)
         return hash.compactMap { String(format: "%02x", $0) }.joined()
     }
