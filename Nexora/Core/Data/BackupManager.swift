@@ -82,10 +82,10 @@ final class BackupManager {
         guard let bookmarkData = backupFolderBookmarkData else { return nil }
         var isStale = false
         do {
-            // Use .withSecurityScope for iOS 14+ security-scoped bookmarks
+            // On iOS, resolve WITHOUT .withSecurityScope option
             let url = try URL(
                 resolvingBookmarkData: bookmarkData,
-                options: .withSecurityScope,
+                options: [],
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
@@ -271,12 +271,6 @@ final class BackupManager {
                 print("BackupManager: sauvegarde externe asynchrone impossible — \(error)")
             }
         }
-    }
-
-    /// Vérifie si un dossier de sauvegarde externe est configuré et accessible.
-    @MainActor
-    var hasExternalBackupFolder: Bool {
-        externalBackupFolderURL != nil
     }
 
     /// Date de la dernière sauvegarde automatique réussie.
