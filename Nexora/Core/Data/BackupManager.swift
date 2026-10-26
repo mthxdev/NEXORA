@@ -92,7 +92,7 @@ final class BackupManager {
             if isStale {
                 // Refresh stale bookmark
                 let newBookmark = try url.bookmarkData(
-                    options: .withSecurityScope,
+                    options: [],
                     includingResourceValuesForKeys: nil,
                     relativeTo: nil
                 )
@@ -271,12 +271,6 @@ final class BackupManager {
                 print("BackupManager: sauvegarde externe asynchrone impossible — \(error)")
             }
         }
-    }
-
-    /// Vérifie si un dossier de sauvegarde externe est configuré et accessible.
-    @MainActor
-    var hasExternalBackupFolder: Bool {
-        externalBackupFolderURL != nil
     }
 
     /// Date de la dernière sauvegarde automatique réussie.
