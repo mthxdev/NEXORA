@@ -15,11 +15,17 @@
 .PARAMETER OutputDir
     Dossier de sortie pour le rapport (défaut: .kilo/reports/)
 
+.PARAMETER KiloCmd
+    Commande KiloCode à utiliser (défaut: kilo)
+
+.PARAMETER TimeoutMinutes
+    Timeout maximal pour l'exécution KiloCode (défaut: 60)
+
 .EXAMPLE
     .\scripts\kilo-orchestrator.ps1 -TaskFile .\kilo\tasks\ma-tache.json -WaitForBuild
 
 .NOTES
-    Nécessite: kilo CLI installé, git, gh CLI (pour wait-build), jq (optionnel)
+    Nécessite: kilo CLI installé, git, gh CLI (pour wait-build)
 #>
 
 param(
@@ -92,7 +98,7 @@ function Get-GitInfo {
     param([string]$BaseCommit, [string]$BranchName)
     $repoRoot = "C:\Dev\_Mathieu\02_Projets\Perso\Nexora"
     
-    $headCommit = git -C $repoRoot rev-parse HEAD
+    $headCommit = git -C $repoRoot rev-parse HEAD 2>$null
     $diffStat = git -C $repoRoot diff --shortstat $BaseCommit 2>$null
     $filesChanged = git -C $repoRoot diff --name-only $BaseCommit 2>$null | Measure-Object | Select-Object -ExpandProperty Count
     
@@ -105,11 +111,11 @@ function Get-GitInfo {
     return @{
         branch = $BranchName
         base_commit = $BaseCommit
-        head_commit = $headCommit.Trim()
+        head_commit = if ($headCommit) { $headCommit.Trim() } else { "" }
         files_changed = $filesChanged
         lines_added = $added
         lines_removed = $removed
-        diff_available = $diffContent.Length -gt 0
+        diff_available = ($null -ne $diffContent) -and ($diffContent.Length -gt 0)
     }
 }
 
@@ -123,8 +129,11 @@ function Invoke-KiloTask {
     
     $repoRoot = "C:\Dev\_Mathieu\02_Projets\Perso\Nexora"
     
+    Write-Log "Invoke-KiloTask: starting for branch $BranchName" -Level "DEBUG"
+    
     # Créer/switcher vers la branche de travail
     $currentBranch = git -C $repoRoot branch --show-current
+    Write-Log "Invoke-KiloTask: current branch = $currentBranch, target = $BranchName" -Level "DEBUG"
     if ($currentBranch -ne $BranchName) {
         if (git -C $repoRoot show-ref --verify --quiet "refs/heads/$BranchName") {
             Write-Log "Branche $BranchName existe, checkout..."
@@ -137,7 +146,9 @@ function Invoke-KiloTask {
     
     # Construire la commande kilo
     $args = @("run")
-    if ($SessionId) { $args += "--session", $SessionId, "--fork" }
+    if ($SessionId -and $SessionId.Length -gt 0) { 
+        $args += "--session", $SessionId, "--fork" 
+    }
     $args += "--format", "json"
     $args += "--dir", $repoRoot
     if ($AutoApprove) { $args += "--auto" }
@@ -153,10 +164,28 @@ function Invoke-KiloTask {
     
     Write-Log "Kilo terminé en $($duration.TotalSeconds)sec, exit code: $exitCode"
     
-    # Essayer d'extraire le session ID depuis la sortie
+    # Essayer d'extraire le session ID depuis la sortie (streaming JSON)
     $sessionId = $null
-    if ($result -match '"session_id"\s*:\s*"([^"]+)"') { $sessionId = $matches[1] }
-    elseif ($result -match 'session[:\s]+([a-f0-9-]+)') { $sessionId = $matches[1] }
+    # Format observé: "sessionID":"ses_..." dans les événements step_start/step_finish
+    $patterns = @(
+        '"sessionID"\s*:\s*"([^"]+)"',
+        '"session_id"\s*:\s*"([^"]+)"',
+        'session[:\s]+([a-f0-9-]{36})'
+    )
+    
+    foreach ($pattern in $patterns) {
+        $match = [regex]::Match($result, $pattern)
+        if ($match.Success -and $match.Groups.Count -gt 1) {
+            $sessionId = $match.Groups[1].Value
+            break
+        }
+    }
+    
+    if (-not $sessionId) {
+        Write-Log "Impossible d'extraire session_id depuis la sortie Kilo" -Level "WARN"
+    }
+    
+    Write-Log "Invoke-KiloTask: returning exit_code=$exitCode, session_id=$sessionId" -Level "DEBUG"
     
     return @{
         exit_code = $exitCode
@@ -240,13 +269,31 @@ $startedAt = Get-Date
 $errors = @()
 $warnings = @()
 
+# Variables initialisées AVANT try pour être accessibles dans catch/finally
+$kiloResult = @{ exit_code = -1; output = ""; session_id = $null; duration_seconds = 0 }
+$gitInfo = @{ branch = $branchName; base_commit = $baseCommit; head_commit = ""; files_changed = 0; lines_added = 0; lines_removed = 0; diff_available = $false }
+$buildInfo = @{ triggered = $false; status = "skipped" }
+$testInfo = @{ executed = @(); passed = 0; failed = 0; skipped = 0; note = "Tests SwiftTesting requièrent macOS + Xcode. Non exécutés localement." }
+$status = "failed"
+
 try {
     # Exécuter la tâche Kilo
-    $kiloResult = Invoke-KiloTask -Prompt $task.prompt -BranchName $branchName -SessionId $task.metadata.session_id
+    $sessionId = ""
+    # Accès sécurisé à metadata.session_id
+    $meta = $null
+    if ($task.PSObject.Properties['metadata']) { $meta = $task.metadata }
+    if ($meta -and $meta.PSObject.Properties['session_id']) { 
+        $sessionId = $meta.session_id 
+    }
+    
+    $kiloResult = Invoke-KiloTask -Prompt $task.prompt -BranchName $branchName -SessionId $sessionId
+    Write-Log "Invoke-KiloTask returned: exit_code=$($kiloResult.exit_code), session_id=$($kiloResult.session_id)"
     
     if ($kiloResult.exit_code -ne 0) {
         $errors += "Kilo exit code: $($kiloResult.exit_code)"
-        $errors += "Output: $($kiloResult.output.Substring(0, [Math]::Min(500, $kiloResult.output.Length)))"
+        $outputPreview = $kiloResult.output
+        if ($outputPreview.Length -gt 500) { $outputPreview = $outputPreview.Substring(0, 500) }
+        $errors += "Output: $outputPreview"
     }
     
     # Infos Git
@@ -258,24 +305,13 @@ try {
         $buildInfo = Wait-GitHubBuild -MaxWaitMinutes 30
     }
     
-    # Tests (info seulement — pas d'exécution locale sur Windows)
-    $testInfo = @{
-        executed = @()
-        passed = 0
-        failed = 0
-        skipped = 0
-        note = "Tests SwiftTesting requièrent macOS + Xcode. Non exécutés localement."
-    }
-    
     $status = if ($errors.Count -gt 0) { "failed" } elseif ($buildInfo.status -eq "failure") { "failed" } else { "completed" }
     
 } catch {
     $errors += "Exception: $($_.Exception.Message)"
     $status = "failed"
-    $gitInfo = @{ branch = $branchName; base_commit = $baseCommit; error = $_.Exception.Message }
-    $buildInfo = @{ triggered = $false; status = "error" }
-    $testInfo = @{ executed = @(); passed = 0; failed = 0; skipped = 0 }
-    $kiloResult = @{ session_id = $null }
+    # gitInfo, buildInfo, testInfo déjà initialisés avec valeurs par défaut
+    $kiloResult = @{ exit_code = -1; output = $_.Exception.Message; session_id = $null; duration_seconds = 0 }
 } finally {
     $completedAt = Get-Date
     
@@ -288,9 +324,16 @@ try {
     
     # Exporter la session Kilo si possible
     $sessionExportPath = ""
-    if ($kiloResult.session_id) {
+    $kiloSessionId = ""
+    if ($null -ne $kiloResult -and $kiloResult.session_id) {
+        $kiloSessionId = $kiloResult.session_id
         $sessionExportPath = "$OutputDir\$taskId-session.json"
-        & $KiloCmd export $kiloResult.session_id --format json > $sessionExportPath 2>$null
+        try {
+            & $KiloCmd export $kiloResult.session_id --format json > $sessionExportPath 2>$null
+        } catch {
+            Write-Log "Export session Kilo échoué (ignoré): $($_.Exception.Message)" -Level "WARN"
+            $sessionExportPath = ""
+        }
     }
     
     # Construire le rapport
@@ -299,7 +342,7 @@ try {
         -Status $status `
         -StartedAt $startedAt `
         -CompletedAt $completedAt `
-        -KiloSessionId $kiloResult.session_id `
+        -KiloSessionId $kiloSessionId `
         -GitInfo $gitInfo `
         -BuildInfo $buildInfo `
         -TestInfo $testInfo `
