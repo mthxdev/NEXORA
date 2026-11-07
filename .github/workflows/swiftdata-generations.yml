@@ -1,0 +1,30 @@
+name: SwiftData Generation Prototype
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'C2.1.6-SwiftData-Prototype/**'
+      - '.github/workflows/swiftdata-generations.yml'
+
+jobs:
+  simulator-tests:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 16.4
+        run: |
+          if [ ! -d /Applications/Xcode_16.4.app/Contents/Developer ]; then
+            echo 'Xcode 16.4 is not installed on this runner image.' >&2
+            exit 1
+          fi
+          sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
+          xcodebuild -version
+      - name: Run isolated simulator tests
+        working-directory: C2.1.6-SwiftData-Prototype
+        run: >-
+          xcodebuild
+          -scheme SwiftDataGenerationPrototype
+          -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5'
+          -parallel-testing-enabled NO
+          test
