@@ -333,7 +333,7 @@ final class SwiftDataGenerationPrototypeTests: XCTestCase {
         value: Int,
         reportConfiguration: (URL) -> Void
     ) throws {
-        let container = try ModelContainer(for: [GenerationRecord.self, GenerationStoreMarker.self])
+        let container = try ModelContainer(for: GenerationRecord.self, GenerationStoreMarker.self)
         guard let configuration = container.configurations.first else {
             XCTFail("Default ModelContainer did not expose a configuration")
             return
