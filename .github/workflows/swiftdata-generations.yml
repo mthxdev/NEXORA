@@ -20,11 +20,67 @@ jobs:
           fi
           sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
           xcodebuild -version
+      - name: Diagnose and install iOS Simulator runtime
+        id: simulator
+        run: |
+          set -euo pipefail
+
+          ios_runtime_version='18.5'
+
+          echo '--- Selected Xcode ---'
+          xcodebuild -version
+          echo '--- Simulator runtimes before installation ---'
+          xcrun simctl list runtimes
+          echo '--- Available simulator devices before installation ---'
+          xcrun simctl list devices available
+
+          if ! xcrun simctl list runtimes --json | python3 -c '
+          import json, sys
+          version = sys.argv[1]
+          runtimes = json.load(sys.stdin).get("runtimes", [])
+          sys.exit(0 if any(r.get("version") == version and r.get("isAvailable") is True and r.get("identifier", "").startswith("com.apple.CoreSimulator.SimRuntime.iOS-") for r in runtimes) else 1)
+          ' "$ios_runtime_version"; then
+            echo "iOS Simulator runtime $ios_runtime_version is missing; downloading and installing it with xcodebuild."
+            xcodebuild -downloadPlatform iOS -buildVersion "$ios_runtime_version"
+          fi
+
+          echo '--- Simulator runtimes after installation ---'
+          xcrun simctl list runtimes
+
+          runtime_id="$(xcrun simctl list runtimes --json | python3 -c '
+          import json, sys
+          version = sys.argv[1]
+          runtimes = json.load(sys.stdin).get("runtimes", [])
+          matches = [r["identifier"] for r in runtimes if r.get("version") == version and r.get("isAvailable") is True and r.get("identifier", "").startswith("com.apple.CoreSimulator.SimRuntime.iOS-")]
+          print(matches[0] if matches else "")
+          ' "$ios_runtime_version")"
+          if [ -z "$runtime_id" ]; then
+            echo "The iOS $ios_runtime_version Simulator runtime is still unavailable after installation." >&2
+            exit 1
+          fi
+
+          echo '--- Available devices after runtime installation ---'
+          xcrun simctl list devices available
+
+          device_udid="$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          runtime_id = sys.argv[1]
+          devices = json.load(sys.stdin).get("devices", {}).get(runtime_id, [])
+          matches = [d["udid"] for d in devices if d.get("isAvailable") is True and d.get("name", "").startswith("iPhone") and d.get("udid")]
+          print(matches[0] if matches else "")
+          ' "$runtime_id")"
+          if [ -z "$device_udid" ]; then
+            echo "No available iPhone simulator was found for runtime $runtime_id." >&2
+            exit 1
+          fi
+
+          echo "Selected available iPhone simulator: $device_udid (runtime $runtime_id)"
+          echo "destination=platform=iOS Simulator,id=$device_udid" >> "$GITHUB_OUTPUT"
       - name: Run isolated simulator tests
         working-directory: C2.1.6-SwiftData-Prototype
         run: >-
           xcodebuild
           -scheme SwiftDataGenerationPrototype
-          -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5'
+          -destination '${{ steps.simulator.outputs.destination }}'
           -parallel-testing-enabled NO
           test
