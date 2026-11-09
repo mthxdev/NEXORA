@@ -296,18 +296,26 @@ def main() -> int:
                     or record.get("Name") == name
                     or record.get("RenditionName") == name
                 ]
-                sizes = {(record.get("PixelWidth"), record.get("PixelHeight")) for record in icon_records}
-                if not icon_records:
+                sized_icon_records = [
+                    record for record in icon_records
+                    if type(record.get("PixelWidth")) is int
+                    and type(record.get("PixelHeight")) is int
+                ]
+                sizes = {
+                    (record["PixelWidth"], record["PixelHeight"])
+                    for record in sized_icon_records
+                }
+                if not sized_icon_records:
                     errors.append(f"Assets.car has no icon renditions named {name}")
                 for required in ((120, 120), (180, 180)):
                     if required not in sizes:
                         errors.append(f"Assets.car {name} is missing {required[0]}x{required[1]} iPhone rendition; saw {sorted(map(str, sizes))}")
                 asset_metadata[name] = {
-                    "renditionCount": len(icon_records),
+                    "renditionCount": len(sized_icon_records),
                     "pixelSizes": [list(size) for size in sorted(sizes)],
                 }
                 (proof_dir / f"Assets-car-{name}.json").write_text(raw, encoding="utf-8")
-                print(f"Assets.car {name:<20}: {len(icon_records)} icon renditions; {sorted(map(str, sizes))}")
+                print(f"Assets.car {name:<20}: {len(sized_icon_records)} icon renditions; {sorted(sizes)}")
             except (OSError, RuntimeError, json.JSONDecodeError, TypeError, AttributeError) as exc:
                 errors.append(str(exc))
 
