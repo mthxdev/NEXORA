@@ -26,7 +26,6 @@ from pathlib import Path
 
 EXPECTED_RENDITIONS = {
     "AppIcon60x60@2x.png": (120, 120),
-    "AppIcon60x60@3x.png": (180, 180),
 }
 EXPECTED_BACKGROUND = (7, 54, 108)
 CORNER_TOLERANCE = 16
@@ -287,8 +286,12 @@ def main() -> int:
                     }
                     if not icon_records:
                         errors.append("assetutil found AppIcon but exposed no icon rendition metadata")
-                    if (120, 120) not in sizes:
-                        errors.append(f"AppIcon in Assets.car has no 120x120 rendition; reported sizes: {sorted(map(str, sizes))}")
+                    for required_size in ((120, 120), (180, 180)):
+                        if required_size not in sizes:
+                            errors.append(
+                                f"AppIcon in Assets.car has no {required_size[0]}x{required_size[1]} rendition; "
+                                f"reported sizes: {sorted(map(str, sizes))}"
+                            )
                     print(f"assetutil AppIcon renditions: {len(icon_records)}; pixel sizes={sorted(map(str, sizes))}")
             except (json.JSONDecodeError, AttributeError, TypeError) as exc:
                 errors.append(f"Invalid assetutil JSON for AppIcon: {exc}")
