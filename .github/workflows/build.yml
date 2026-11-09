@@ -82,11 +82,18 @@ jobs:
 
       - name: Verify icon in built app
         run: |
-          python3 Tools/verify_ipa_icon.py Nexora.ipa Payload/Nexora.app
+          python3 Tools/verify_ipa_icon.py Nexora.ipa Payload/Nexora.app --proof-dir icon-proof
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: Nexora-ipa
           path: Nexora.ipa
+          retention-days: 90
+
+      - name: Upload icon verification proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexora-icon-proof
+          path: icon-proof/
           retention-days: 90
