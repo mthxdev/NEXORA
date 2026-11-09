@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,8 +16,14 @@ jobs:
 
       - name: Select Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
-          xcodebuild -version
+          xcode_path=/Applications/Xcode_16.4.app/Contents/Developer
+          if [ ! -d "$xcode_path" ]; then
+            echo "Xcode 16.4 was not found at $xcode_path" >&2
+            exit 1
+          fi
+          sudo xcode-select --switch "$xcode_path"
+          xcodebuild -version | tee xcode-version.txt
+          grep -q '^Xcode 16\.4$' xcode-version.txt
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -64,9 +70,15 @@ jobs:
 
       - name: Package IPA
         run: |
+          app_path=build/Build/Products/Release-iphoneos/Nexora.app
+          test -d "$app_path"
+          test -f "$app_path/Info.plist"
           mkdir -p Payload
-          cp -r build/Build/Products/Release-iphoneos/Nexora.app Payload/
-          zip -r Nexora.ipa Payload/
+          cp -R "$app_path" Payload/
+          zip -qr Nexora.ipa Payload
+          test -s Nexora.ipa
+          unzip -t Nexora.ipa
+          python3 -c 'import sys, zipfile; z=zipfile.ZipFile(sys.argv[1]); names=z.namelist(); assert "Payload/Nexora.app/Info.plist" in names, "IPA is missing Payload/Nexora.app/Info.plist"' Nexora.ipa
 
       - name: Verify icon in built app
         run: |
