@@ -293,8 +293,7 @@ def main() -> int:
                 icon_records = [
                     record for record in records
                     if record.get("AssetType") == "Icon Image"
-                    or record.get("Name") == name
-                    or record.get("RenditionName") == name
+                    and record.get("Name") == name
                 ]
                 sized_icon_records = [
                     record for record in icon_records
