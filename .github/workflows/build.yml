@@ -28,6 +28,13 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Generate approved app icon renditions
+        run: |
+          python3 -m venv .venv-icon-tools
+          . .venv-icon-tools/bin/activate
+          python -m pip install --disable-pip-version-check Pillow
+          python Tools/generate_alternate_icons.py --preview icon-proof/Comparison.png
+
       - name: Generate Xcode project
         run: xcodegen generate
 
@@ -36,6 +43,47 @@ jobs:
           # Force the project objectVersion back to 56 (Xcode 15 compatible)
           # to bypass the format 77 error without triggering Xcode 16's actool bug.
           sed -i '' -E 's/objectVersion = [0-9]+;/objectVersion = 56;/g' Nexora.xcodeproj/project.pbxproj
+
+      - name: Install and select iOS 18.5 simulator
+        run: |
+          xcrun simctl list runtimes | tee simulator-runtimes.txt
+          if ! grep -q 'iOS 18\.5' simulator-runtimes.txt; then
+            xcodebuild -downloadPlatform iOS -buildVersion 18.5
+          fi
+          xcrun simctl list runtimes | tee simulator-runtimes-after-install.txt
+          grep -q 'iOS 18\.5' simulator-runtimes-after-install.txt
+          xcrun simctl list devices available --json > available-devices.json
+          python3 - <<'PY'
+          import json
+          import os
+
+          with open("available-devices.json", encoding="utf-8") as source:
+              runtimes = json.load(source)
+          candidates = [
+              device
+              for runtime, devices in runtimes.get("devices", {}).items()
+              if "iOS-18-5" in runtime
+              for device in devices
+              if device.get("isAvailable") and device.get("name", "").startswith("iPhone")
+          ]
+          if not candidates:
+              raise SystemExit("No available iPhone simulator was found for the installed iOS 18.5 runtime")
+          selected = candidates[0]
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as environment:
+              environment.write(f"SIMULATOR_ID={selected['udid']}\n")
+          print(f"Selected iOS 18.5 simulator: {selected['name']} ({selected['udid']})")
+          PY
+
+      - name: Test icon selection behavior
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Nexora.xcodeproj \
+            -scheme Nexora \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -parallel-testing-enabled NO \
+            -only-testing:NexoraIconTests \
+            -derivedDataPath build 2>&1 | tee tests.log
 
       - name: Clean build directory
         run: rm -rf build
@@ -61,7 +109,9 @@ jobs:
         if: failure()
         run: |
           echo "=== FULL BUILD LOG ==="
-          cat build.log
+          if [ -f build.log ]; then cat build.log; fi
+          echo "=== FULL TEST LOG ==="
+          if [ -f tests.log ]; then cat tests.log; fi
           echo ""
           echo "=== ANNOTATING ERRORS ==="
           grep -iE 'error:' build.log | head -100 | while IFS= read -r line; do
@@ -82,7 +132,9 @@ jobs:
 
       - name: Verify icon in built app
         run: |
-          python3 Tools/verify_ipa_icon.py Nexora.ipa Payload/Nexora.app --proof-dir icon-proof
+          python3 Tools/verify_ipa_icon.py Nexora.ipa Payload/Nexora.app \
+            --catalog Nexora/Resources/Assets.xcassets \
+            --proof-dir icon-proof
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4

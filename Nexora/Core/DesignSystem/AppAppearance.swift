@@ -31,6 +31,22 @@ enum AppLogo: String, CaseIterable {
 
     var displayName: String { rawValue }
 
+    /// The asset-catalog name declared to UIKit for a Home Screen icon.
+    /// `nil` selects the primary AppIcon.
+    var alternateIconName: String? {
+        switch self {
+        case .classic: return nil
+        case .gradient: return "AppIcon-Gradient"
+        case .minimal: return "AppIcon-Minimal"
+        case .bold: return "AppIcon-Bold"
+        case .mono: return "AppIcon-Mono"
+        }
+    }
+
+    static func forAlternateIconName(_ name: String?) -> AppLogo? {
+        allCases.first { $0.alternateIconName == name }
+    }
+
     var assetName: String {
         switch self {
         case .classic: return "NexoraLogo"
