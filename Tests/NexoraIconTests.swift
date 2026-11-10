@@ -73,36 +73,13 @@ final class NexoraIconTests: XCTestCase {
     func testEveryLogoPreviewRendersWithRoundedCorners() {
         for logo in AppLogo.allCases {
             let size: CGFloat = 100
-            let host = UIHostingController(rootView: AppIconPreview(logo: logo, size: size))
-            guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else {
-                XCTFail("No window scene is available to render the \(logo) icon preview")
+            let renderer = ImageRenderer(content: AppIconPreview(logo: logo, size: size))
+            renderer.scale = 1
+            guard let rendered = renderer.uiImage else {
+                XCTFail("Could not render the \(logo) icon preview")
                 continue
             }
-            let window = UIWindow(windowScene: scene)
-            window.frame = CGRect(x: 0, y: 0, width: size, height: size)
-            window.rootViewController = host
-            window.isHidden = false
-            defer {
-                window.isHidden = true
-                window.rootViewController = nil
-            }
 
-            host.view.backgroundColor = .clear
-            host.view.isOpaque = false
-            host.view.setNeedsLayout()
-            window.setNeedsLayout()
-            window.layoutIfNeeded()
-            host.view.layoutIfNeeded()
-
-            let format = UIGraphicsImageRendererFormat()
-            format.opaque = false
-            let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
-            var didDraw = false
-            let rendered = renderer.image { _ in
-                didDraw = host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true)
-            }
-
-            XCTAssertTrue(didDraw, "Could not render the \(logo) icon preview")
             XCTAssertEqual(alpha(atX: 0, y: 0, in: rendered), 0, "\(logo) preview should clip its outer corner")
             XCTAssertEqual(alpha(atX: 50, y: 50, in: rendered), 255, "\(logo) preview should remain visible at its center")
         }
