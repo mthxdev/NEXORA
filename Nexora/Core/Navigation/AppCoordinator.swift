@@ -1,11 +1,11 @@
 import SwiftUI
 
-enum AppTab: Hashable {
+enum AppTab: Hashable, CaseIterable {
     case home
     case muscuLog
     case logBook
     case repas
-    case settings
+    case chill
 }
 
 struct AppCoordinator: View {
@@ -37,11 +37,14 @@ struct AppCoordinator: View {
                 }
                 .tag(AppTab.repas)
 
-            NexoraSettingsView()
-                .tabItem {
-                    Label("Réglages", systemImage: "gearshape.fill")
-                }
-                .tag(AppTab.settings)
+            NavigationStack {
+                ChillHomeView()
+            }
+            .tabItem {
+                Label("Chill", systemImage: "wind")
+            }
+            .tag(AppTab.chill)
+
         }
         .tint(.accentColor)
     }

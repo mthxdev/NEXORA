@@ -93,15 +93,4 @@ struct ChillSessionTimeline {
         return min(max(phaseElapsed / phaseDuration, 0), 1)
     }
 
-    var phaseRemainingSeconds: Int {
-        let position = elapsedSeconds.truncatingRemainder(dividingBy: TimeInterval(pattern.cycleSeconds))
-        let left: TimeInterval
-        switch phase {
-        case .inhale:
-            left = TimeInterval(pattern.inhaleSeconds) - position
-        case .exhale:
-            left = TimeInterval(pattern.cycleSeconds) - position
-        }
-        return max(1, Int(ceil(left)))
-    }
 }

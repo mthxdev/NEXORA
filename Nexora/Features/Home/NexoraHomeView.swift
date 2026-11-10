@@ -5,6 +5,7 @@ struct NexoraHomeView: View {
     @AppStorage("appLogo") private var appLogo: AppLogo = .classic
     @Query(sort: \CompletedWorkout.date, order: .reverse) private var completedWorkouts: [CompletedWorkout]
     @Query(sort: \Program.createdAt) private var programs: [Program]
+    @State private var showingSettings = false
     
     var body: some View {
         NavigationStack {
@@ -30,6 +31,18 @@ struct NexoraHomeView: View {
             .background(NexoraColors.groupedBackground)
             .navigationTitle("Nexora")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showingSettings = true } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("Réglages")
+                }
+            }
+            .sheet(isPresented: $showingSettings) {
+                NexoraSettingsView()
+                    .presentationDetents([.large])
+            }
         }
     }
     
@@ -148,18 +161,6 @@ struct NexoraHomeView: View {
                     )
                 }
                 .accessibilityLabel("Ouvrir Repas — \(SampleRecipes.all.count) recettes")
-                .buttonStyle(.plain)
-
-                NavigationLink(destination: ChillHomeView()) {
-                    ModuleCard(
-                        icon: "wind",
-                        title: "Chill",
-                        subtitle: "Respiration et relaxation",
-                        color: .teal,
-                        stats: "Un moment pour souffler"
-                    )
-                }
-                .accessibilityLabel("Ouvrir Chill, respiration et relaxation")
                 .buttonStyle(.plain)
             }
         }
