@@ -208,7 +208,6 @@ final class ChillAudioService: ChillCuePlaying {
     private func handleMediaServicesReset() {
         engine?.stop()
         engine = nil
-        playerNode = nil
         isSessionPaused = true
         deactivateSession()
         onMediaServicesReset?()
