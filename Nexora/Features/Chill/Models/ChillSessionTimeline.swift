@@ -57,8 +57,8 @@ struct ChillSessionTimeline {
     }
 
     mutating func refresh(at now: TimeInterval) {
-        guard status == .running, let currentRunStartedAt else { return }
-        let runElapsed = max(0, now - currentRunStartedAt)
+        guard status == .running, let runStartedAt = currentRunStartedAt else { return }
+        let runElapsed = max(0, now - runStartedAt)
         elapsedSeconds = min(elapsedBeforeCurrentRun + runElapsed, durationSeconds)
         if elapsedSeconds >= durationSeconds {
             currentRunStartedAt = nil

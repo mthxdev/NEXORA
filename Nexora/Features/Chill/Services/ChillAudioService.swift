@@ -46,7 +46,7 @@ final class ChillAudioService {
                 guard let raw = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
                       AVAudioSession.RouteChangeReason(rawValue: raw) == .oldDeviceUnavailable,
                       let previous = note.userInfo?[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription,
-                      previous.outputs.contains(where: Self.isPrivateAudioRoute) else { return }
+                      previous.outputs.contains(where: { Self.isPrivateAudioRoute($0.portType) }) else { return }
                 self?.onHeadphonesDisconnected?()
             }
         })

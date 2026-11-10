@@ -25,19 +25,20 @@ final class ChillSessionController: ObservableObject {
         self.clock = clock
         self.origin = clock.now
         self.ambience = ambience
-        self.audioService = audioService ?? ChillAudioService()
+        let resolvedAudioService = audioService ?? ChillAudioService()
+        self.audioService = resolvedAudioService
         self.initialVolume = min(max(volume, 0.05), 0.75)
         self.timeline = ChillSessionTimeline(
             pattern: pattern,
             durationSeconds: TimeInterval(min(max(durationMinutes, 1), 60) * 60)
         )
-        audioService.onInterruption = { [weak self] in
+        resolvedAudioService.onInterruption = { [weak self] in
             self?.pauseForSystemEvent("La séance est en pause après une interruption audio.")
         }
-        audioService.onHeadphonesDisconnected = { [weak self] in
+        resolvedAudioService.onHeadphonesDisconnected = { [weak self] in
             self?.pauseForSystemEvent("La sortie audio a été déconnectée. La séance est en pause.")
         }
-        audioService.onMediaServicesReset = { [weak self] in
+        resolvedAudioService.onMediaServicesReset = { [weak self] in
             self?.pauseForSystemEvent("Le service audio a été réinitialisé. Relancez la séance audio manuellement.")
         }
     }
