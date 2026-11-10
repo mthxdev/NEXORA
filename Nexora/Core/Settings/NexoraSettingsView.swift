@@ -208,7 +208,7 @@ private var aboutSection: some View {
     }
 }
 
-struct AppIconPreview: View {
+private struct AppIconPreview: View {
     let logo: AppLogo
     let size: CGFloat
     var accessibilityLabel: String? = nil
