@@ -83,6 +83,7 @@ jobs:
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
             -parallel-testing-enabled NO \
             -only-testing:NexoraIconTests \
+            -only-testing:NexoraChillTests \
             -derivedDataPath build 2>&1 | tee tests.log
 
       - name: Clean build directory

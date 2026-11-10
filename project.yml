@@ -15,20 +15,34 @@ targets:
     type: application
     platform: iOS
     sources:
-      - Nexora
+      - path: Nexora
+        excludes:
+          - Features/Chill/Resources/*.m4a
+          - Features/Chill/Resources/*.md
     # Ne PAS déclarer Assets.xcassets dans `resources` : il est déjà compilé
-    # par le target via `sources`. Le déclarer deux fois dupliquait
-    # Assets.car dans le bundle et pouvait faire échouer actool.
+    # par le target via `sources`. Le déclarer deux fois dupliquait Assets.car
+    # et pouvait faire échouer actool.
+    resources:
+      - Nexora/Features/Chill/Resources/chill_rain.m4a
+      - Nexora/Features/Chill/Resources/chill_fire.m4a
+      - Nexora/Features/Chill/Resources/chill_ocean.m4a
+      - Nexora/Features/Chill/Resources/chill_forest.m4a
+      - Nexora/Features/Chill/Resources/chill_night.m4a
+    info:
+      path: BuildSupport/Nexora-Info.plist
+      properties:
+        UIBackgroundModes:
+          - audio
     frameworks:
       - System: UserNotifications
+      - System: AVFoundation
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mathieu.musculog
         MARKETING_VERSION: "2.0"
         # Incrémenté à chaque livraison : SpringBoard ne régénère pas le cache
         # d'icônes si CFBundleVersion ne change pas.
-        CURRENT_PROJECT_VERSION: 11
-        GENERATE_INFOPLIST_FILE: YES
+        CURRENT_PROJECT_VERSION: 12
         INFOPLIST_KEY_CFBundleDisplayName: Nexora
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
@@ -55,13 +69,28 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_VERSION: "5.10"
 
+  NexoraChillTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests/ChillSessionTimelineTests.swift
+    dependencies:
+      - target: Nexora
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mathieu.musculog.chill-tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.10"
+
 schemes:
   Nexora:
     build:
       targets:
         Nexora: all
         NexoraIconTests: [test]
+        NexoraChillTests: [test]
     test:
       config: Debug
       targets:
         - NexoraIconTests
+        - NexoraChillTests

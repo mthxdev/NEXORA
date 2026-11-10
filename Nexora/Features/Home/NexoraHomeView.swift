@@ -149,6 +149,18 @@ struct NexoraHomeView: View {
                 }
                 .accessibilityLabel("Ouvrir Repas — \(SampleRecipes.all.count) recettes")
                 .buttonStyle(.plain)
+
+                NavigationLink(destination: ChillHomeView()) {
+                    ModuleCard(
+                        icon: "wind",
+                        title: "Chill",
+                        subtitle: "Respiration et relaxation",
+                        color: .teal,
+                        stats: "Un moment pour souffler"
+                    )
+                }
+                .accessibilityLabel("Ouvrir Chill, respiration et relaxation")
+                .buttonStyle(.plain)
             }
         }
     }
