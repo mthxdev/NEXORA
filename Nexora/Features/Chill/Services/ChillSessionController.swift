@@ -19,13 +19,13 @@ final class ChillSessionController: ObservableObject {
         durationMinutes: Int,
         ambience: ChillAmbience,
         volume: Float,
-        audioService: ChillAudioService = ChillAudioService()
+        audioService: ChillAudioService? = nil
     ) {
         let clock = ContinuousClock()
         self.clock = clock
         self.origin = clock.now
         self.ambience = ambience
-        self.audioService = audioService
+        self.audioService = audioService ?? ChillAudioService()
         self.initialVolume = min(max(volume, 0.05), 0.75)
         self.timeline = ChillSessionTimeline(
             pattern: pattern,
