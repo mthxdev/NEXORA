@@ -74,10 +74,24 @@ final class NexoraIconTests: XCTestCase {
         for logo in AppLogo.allCases {
             let size: CGFloat = 100
             let host = UIHostingController(rootView: AppIconPreview(logo: logo, size: size))
-            host.view.frame = CGRect(x: 0, y: 0, width: size, height: size)
+            guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else {
+                XCTFail("No window scene is available to render the \(logo) icon preview")
+                continue
+            }
+            let window = UIWindow(windowScene: scene)
+            window.frame = CGRect(x: 0, y: 0, width: size, height: size)
+            window.rootViewController = host
+            window.isHidden = false
+            defer {
+                window.isHidden = true
+                window.rootViewController = nil
+            }
+
             host.view.backgroundColor = .clear
             host.view.isOpaque = false
             host.view.setNeedsLayout()
+            window.setNeedsLayout()
+            window.layoutIfNeeded()
             host.view.layoutIfNeeded()
 
             let format = UIGraphicsImageRendererFormat()
