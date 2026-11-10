@@ -1,4 +1,6 @@
 import XCTest
+import SwiftUI
+import UIKit
 @testable import Nexora
 
 @MainActor
@@ -66,6 +68,44 @@ final class NexoraIconTests: XCTestCase {
         XCTAssertEqual(selection.selectedLogo, .classic)
         XCTAssertEqual(defaults.string(forKey: "appLogo"), AppLogo.classic.rawValue)
         XCTAssertNotNil(selection.errorMessage)
+    }
+
+    func testEveryLogoPreviewRendersWithRoundedCorners() {
+        for logo in AppLogo.allCases {
+            let size: CGFloat = 100
+            let host = UIHostingController(rootView: AppIconPreview(logo: logo, size: size))
+            host.view.frame = CGRect(x: 0, y: 0, width: size, height: size)
+            host.view.backgroundColor = .clear
+            host.view.isOpaque = false
+            host.view.setNeedsLayout()
+            host.view.layoutIfNeeded()
+
+            let format = UIGraphicsImageRendererFormat()
+            format.opaque = false
+            let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
+            var didDraw = false
+            let rendered = renderer.image { _ in
+                didDraw = host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true)
+            }
+
+            XCTAssertTrue(didDraw, "Could not render the \(logo) icon preview")
+            XCTAssertEqual(alpha(atX: 0, y: 0, in: rendered), 0, "\(logo) preview should clip its outer corner")
+            XCTAssertEqual(alpha(atX: 50, y: 50, in: rendered), 255, "\(logo) preview should remain visible at its center")
+        }
+    }
+
+    private func alpha(atX x: Int, y: Int, in image: UIImage) -> UInt8 {
+        guard let cgImage = image.cgImage,
+              let data = cgImage.dataProvider?.data,
+              let bytes = CFDataGetBytePtr(data) else {
+            XCTFail("Rendered icon preview has no readable pixel data")
+            return 0
+        }
+
+        let alphaInfo = CGImageAlphaInfo(rawValue: cgImage.bitmapInfo.rawValue & CGBitmapInfo.alphaInfoMask.rawValue)
+        let alphaOffset = (alphaInfo == .first || alphaInfo == .premultipliedFirst) ? 0 : 3
+        let offset = y * cgImage.bytesPerRow + x * (cgImage.bitsPerPixel / 8) + alphaOffset
+        return bytes[offset]
     }
 
     private func makeDefaults() -> IsolatedDefaults {

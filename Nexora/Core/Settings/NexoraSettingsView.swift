@@ -90,11 +90,7 @@ struct NexoraSettingsView: View {
             )) {
                 ForEach(AppLogo.allCases, id: \.self) { logo in
                     HStack(spacing: NexoraSpacing.sm) {
-                        Image(logo.assetName)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 30, height: 30)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        AppIconPreview(logo: logo, size: 30)
                         Text(logo.displayName)
                     }
                         .tag(Optional(logo))
@@ -212,6 +208,26 @@ private var aboutSection: some View {
     }
 }
 
+struct AppIconPreview: View {
+    let logo: AppLogo
+    let size: CGFloat
+    var accessibilityLabel: String? = nil
+
+    var body: some View {
+        icon
+            .accessibilityLabel(accessibilityLabel ?? logo.displayName)
+            .accessibilityHidden(accessibilityLabel == nil)
+    }
+
+    private var icon: some View {
+        Image(logo.assetName)
+            .resizable()
+            .scaledToFill()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+    }
+}
+
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
     let selectedLogo: AppLogo?
@@ -221,11 +237,7 @@ struct AboutView: View {
             ScrollView {
                 VStack(spacing: NexoraSpacing.lg) {
                     if let selectedLogo {
-                        Image(selectedLogo.assetName)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 72, height: 72)
-                            .accessibilityLabel("Logo Nexora")
+                        AppIconPreview(logo: selectedLogo, size: 72, accessibilityLabel: "Logo Nexora")
                     }
                     
                     VStack(spacing: NexoraSpacing.xs) {
