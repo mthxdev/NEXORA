@@ -5,7 +5,6 @@ struct NexoraHomeView: View {
     @AppStorage("appLogo") private var appLogo: AppLogo = .classic
     @Query(sort: \CompletedWorkout.date, order: .reverse) private var completedWorkouts: [CompletedWorkout]
     @Query(sort: \Program.createdAt) private var programs: [Program]
-    @State private var showingSettings = false
     
     var body: some View {
         NavigationStack {
@@ -33,15 +32,8 @@ struct NexoraHomeView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showingSettings = true } label: {
-                        Image(systemName: "gearshape")
-                    }
-                    .accessibilityLabel("Réglages")
+                    NexoraSettingsToolbarButton()
                 }
-            }
-            .sheet(isPresented: $showingSettings) {
-                NexoraSettingsView()
-                    .presentationDetents([.large])
             }
         }
     }

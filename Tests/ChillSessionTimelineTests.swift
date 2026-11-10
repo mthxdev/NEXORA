@@ -89,28 +89,8 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertEqual(timeline.phase, .inhale)
     }
 
-    func testCueScheduleContainsOnlyPhaseStartsAndHonorsCustomDurations() {
-        let events = ChillCueSchedule.events(
-            pattern: ChillBreathingPattern(inhaleSeconds: 4, exhaleSeconds: 6),
-            durationSeconds: 20
-        )
-        XCTAssertEqual(events, [
-            ChillCueEvent(elapsedSeconds: 0, phase: .inhale),
-            ChillCueEvent(elapsedSeconds: 4, phase: .exhale),
-            ChillCueEvent(elapsedSeconds: 10, phase: .inhale),
-            ChillCueEvent(elapsedSeconds: 14, phase: .exhale)
-        ])
-        XCTAssertFalse(events.contains { $0.elapsedSeconds >= 20 })
-    }
-
-    func testRescheduledCuesSkipCurrentAndPastPhaseStarts() {
-        let events = ChillCueSchedule.events(pattern: .coherence, durationSeconds: 30, strictlyAfter: 5.2)
-        XCTAssertEqual(events.first, ChillCueEvent(elapsedSeconds: 10, phase: .inhale))
-        XCTAssertTrue(events.allSatisfy { $0.elapsedSeconds > 5.2 })
-    }
-
     @MainActor
-    func testStartPauseResumeStopDoNotCreateDuplicateAudioSchedules() {
+    func testStartPauseResumeStopDoNotCreateDuplicateAudioEngines() {
         let audio = ChillCueSpy()
         let controller = ChillSessionController(pattern: .coherence, durationMinutes: 5, soundGuidanceEnabled: true, audioService: audio)
         controller.startIfNeeded()
@@ -190,6 +170,47 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertEqual(ChillSessionTimeline(pattern: .coherence, durationSeconds: 5).durationSeconds, 60)
         XCTAssertEqual(ChillSessionTimeline(pattern: .coherence, durationSeconds: 90_000).durationSeconds, 3_600)
     }
+
+    func testBreathingCircleReachesBothExactEndpointsAndFitsCompactScreens() {
+        let maxDiameter = ChillBreathingVisualMetrics.maximumDiameter(availableWidth: 320, availableHeight: 600)
+        XCTAssertEqual(maxDiameter, 252, accuracy: 0.001)
+        XCTAssertEqual(ChillBreathingVisualMetrics.diameter(maximum: maxDiameter, phase: .inhale, progress: 0), maxDiameter * 0.48, accuracy: 0.001)
+        XCTAssertEqual(ChillBreathingVisualMetrics.diameter(maximum: maxDiameter, phase: .inhale, progress: 1), maxDiameter, accuracy: 0.001)
+        XCTAssertEqual(ChillBreathingVisualMetrics.diameter(maximum: maxDiameter, phase: .exhale, progress: 0), maxDiameter, accuracy: 0.001)
+        XCTAssertEqual(ChillBreathingVisualMetrics.diameter(maximum: maxDiameter, phase: .exhale, progress: 1), maxDiameter * 0.48, accuracy: 0.001)
+        XCTAssertEqual(ChillBreathingVisualMetrics.maximumDiameter(availableWidth: 320, availableHeight: 100), 42, accuracy: 0.001)
+        XCTAssertEqual(ChillBreathingVisualMetrics.maximumDiameter(availableWidth: 40, availableHeight: 100), 0, accuracy: 0.001)
+    }
+
+    func testBreathingAudioEnvelopeIsQuietSmoothAndFollowsCustomPhases() {
+        let pattern = ChillBreathingPattern(inhaleSeconds: 4, exhaleSeconds: 6)
+        XCTAssertEqual(ChillBreathingAudioEnvelope.position(at: 2, pattern: pattern), .init(phase: .inhale, progress: 0.5))
+        XCTAssertEqual(ChillBreathingAudioEnvelope.position(at: 7, pattern: pattern), .init(phase: .exhale, progress: 0.5))
+        XCTAssertLessThan(ChillBreathingAudioEnvelope.frequency(at: 1, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 3, pattern: pattern))
+        XCTAssertGreaterThan(ChillBreathingAudioEnvelope.frequency(at: 5, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 9, pattern: pattern))
+        XCTAssertEqual(ChillBreathingAudioEnvelope.frequency(at: 4, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 4.0001, pattern: pattern), accuracy: 0.01)
+        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0, volume: 0.8), 0, accuracy: 0.000001)
+        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 1, volume: 0.8), 0, accuracy: 0.000001)
+        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0.5, volume: 0.8), 0.052, accuracy: 0.000001)
+        XCTAssertLessThan(ChillBreathingAudioEnvelope.amplitude(progress: 0.99, volume: 0.8), 0.0001)
+        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0.5, volume: 0), 0, accuracy: 0.000001)
+        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: .nan, volume: 1), 0)
+        XCTAssertLessThanOrEqual(abs(ChillBreathingAudioEnvelope.sample(at: 2.5, pattern: pattern, volume: 1)), 0.065)
+    }
+
+    @MainActor
+    func testConfiguredSoundVolumeIsPassedToTheAudioService() {
+        let audio = ChillCueSpy()
+        let controller = ChillSessionController(
+            pattern: .coherence,
+            durationMinutes: 5,
+            soundGuidanceEnabled: true,
+            soundVolume: 0.42,
+            audioService: audio
+        )
+        controller.startIfNeeded()
+        XCTAssertEqual(audio.lastStartVolume, 0.42, accuracy: 0.0001)
+    }
 }
 
 @MainActor
@@ -204,10 +225,14 @@ private final class ChillCueSpy: ChillCuePlaying {
     private(set) var pauseCount = 0
     private(set) var resumeCount = 0
     private(set) var stopCount = 0
+    private(set) var lastStartVolume = 0.0
 
-    func start(pattern: ChillBreathingPattern, durationSeconds: TimeInterval) throws { startCount += 1 }
+    func start(pattern: ChillBreathingPattern, durationSeconds: TimeInterval, volume: Double) throws {
+        startCount += 1
+        lastStartVolume = volume
+    }
     func pause() { pauseCount += 1 }
-    func resume(after elapsedSeconds: TimeInterval) throws { resumeCount += 1 }
+    func resume(after elapsedSeconds: TimeInterval, volume: Double) throws { resumeCount += 1 }
     func updateNowPlaying(elapsedSeconds: TimeInterval, durationSeconds: TimeInterval, isPaused: Bool) { }
     func stop() { stopCount += 1 }
 }

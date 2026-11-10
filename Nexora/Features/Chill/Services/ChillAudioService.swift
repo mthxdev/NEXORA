@@ -1,4 +1,5 @@
 import AVFoundation
+import AudioToolbox
 import Foundation
 import MediaPlayer
 
@@ -11,9 +12,9 @@ protocol ChillCuePlaying: AnyObject {
     var onPauseRequest: (() -> Void)? { get set }
     var onStopRequest: (() -> Void)? { get set }
 
-    func start(pattern: ChillBreathingPattern, durationSeconds: TimeInterval) throws
+    func start(pattern: ChillBreathingPattern, durationSeconds: TimeInterval, volume: Double) throws
     func pause()
-    func resume(after elapsedSeconds: TimeInterval) throws
+    func resume(after elapsedSeconds: TimeInterval, volume: Double) throws
     func updateNowPlaying(elapsedSeconds: TimeInterval, durationSeconds: TimeInterval, isPaused: Bool)
     func stop()
 }
@@ -39,12 +40,12 @@ final class ChillAudioService: ChillCuePlaying {
 
     private let session = AVAudioSession.sharedInstance()
     private var engine: AVAudioEngine?
-    private var playerNode: AVAudioPlayerNode?
     private var observers: [NSObjectProtocol] = []
     private var commandTargets: [(MPRemoteCommand, Any)] = []
     private var previousCommandStates: [(MPRemoteCommand, Bool)] = []
     private var pattern: ChillBreathingPattern = .coherence
     private var durationSeconds: TimeInterval = 0
+    private var volume: Double = 0.25
     private var isSessionPaused = false
 
     init() {
@@ -83,9 +84,10 @@ final class ChillAudioService: ChillCuePlaying {
         commandTargets.forEach { $0.0.removeTarget($0.1) }
     }
 
-    func start(pattern: ChillBreathingPattern, durationSeconds: TimeInterval) throws {
+    func start(pattern: ChillBreathingPattern, durationSeconds: TimeInterval, volume: Double) throws {
         self.pattern = pattern
         self.durationSeconds = durationSeconds
+        self.volume = min(max(volume.isFinite ? volume : 0.25, 0.05), 1)
         isSessionPaused = false
         try startEngine(schedulingAfter: nil)
         installRemoteCommands()
@@ -97,13 +99,12 @@ final class ChillAudioService: ChillCuePlaying {
         isSessionPaused = true
         engine?.stop()
         engine = nil
-        playerNode = nil
         deactivateSession()
-        updateNowPlaying(elapsedSeconds: 0, durationSeconds: durationSeconds, isPaused: true)
     }
 
-    func resume(after elapsedSeconds: TimeInterval) throws {
+    func resume(after elapsedSeconds: TimeInterval, volume: Double) throws {
         guard isSessionPaused else { return }
+        self.volume = min(max(volume.isFinite ? volume : self.volume, 0.05), 1)
         try startEngine(schedulingAfter: elapsedSeconds)
         isSessionPaused = false
         updateNowPlaying(elapsedSeconds: elapsedSeconds, durationSeconds: durationSeconds, isPaused: false)
@@ -124,7 +125,6 @@ final class ChillAudioService: ChillCuePlaying {
     func stop() {
         engine?.stop()
         engine = nil
-        playerNode = nil
         isSessionPaused = false
         removeRemoteCommands()
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
@@ -137,56 +137,42 @@ final class ChillAudioService: ChillCuePlaying {
             try session.setActive(true)
 
             let nextEngine = AVAudioEngine()
-            let nextPlayer = AVAudioPlayerNode()
             let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
-            nextEngine.attach(nextPlayer)
-            nextEngine.connect(nextPlayer, to: nextEngine.mainMixerNode, format: format)
+            let sampleRate = format.sampleRate
+            let baseElapsed = max(0, elapsedSeconds ?? 0)
+            let renderPattern = pattern
+            let renderVolume = volume
+            var renderedFrameCount: Int64 = 0
+            let sourceNode = AVAudioSourceNode(format: format) { _, _, frameCount, audioBufferList in
+                let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
+                guard let audioData = buffers.first?.mData?.assumingMemoryBound(to: Float.self) else {
+                    return kAudio_ParamError
+                }
 
-            let inhaleCue = Self.makeCue(for: .inhale, format: format)
-            let exhaleCue = Self.makeCue(for: .exhale, format: format)
-            let events = ChillCueSchedule.events(
-                pattern: pattern,
-                durationSeconds: durationSeconds,
-                strictlyAfter: elapsedSeconds
-            )
-            for event in events {
-                let offset = max(0, event.elapsedSeconds - (elapsedSeconds ?? 0))
-                let frame = AVAudioFramePosition((offset * format.sampleRate).rounded())
-                let audioTime = AVAudioTime(sampleTime: frame, atRate: format.sampleRate)
-                let cue = event.phase == .inhale ? inhaleCue : exhaleCue
-                nextPlayer.scheduleBuffer(cue, at: audioTime, options: [])
+                for frame in 0..<Int(frameCount) {
+                    let elapsed = baseElapsed + Double(renderedFrameCount + Int64(frame)) / sampleRate
+                    audioData[frame] = ChillBreathingAudioEnvelope.sample(
+                        at: elapsed,
+                        pattern: renderPattern,
+                        volume: renderVolume
+                    )
+                }
+                renderedFrameCount += Int64(frameCount)
+                return noErr
             }
 
+            nextEngine.attach(sourceNode)
+            nextEngine.connect(sourceNode, to: nextEngine.mainMixerNode, format: format)
+
+            nextEngine.prepare()
             try nextEngine.start()
-            nextPlayer.play()
             engine = nextEngine
-            playerNode = nextPlayer
         } catch {
             engine?.stop()
             engine = nil
-            playerNode = nil
             deactivateSession()
             throw AudioError.engineCouldNotStart(error)
         }
-    }
-
-    private static func makeCue(for phase: ChillSessionTimeline.Phase, format: AVAudioFormat) -> AVAudioPCMBuffer {
-        let sampleRate = format.sampleRate
-        let duration = 0.30
-        let frameCount = AVAudioFrameCount((sampleRate * duration).rounded())
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
-        buffer.frameLength = frameCount
-        let fundamental: Double = phase == .inhale ? 523.25 : 392.0
-        let overtone = fundamental * 1.5
-        let data = buffer.floatChannelData![0]
-
-        for index in 0..<Int(frameCount) {
-            let time = Double(index) / sampleRate
-            let fade = pow(sin(.pi * time / duration), 1.4)
-            let tone = sin(2 * .pi * fundamental * time) + 0.18 * sin(2 * .pi * overtone * time)
-            data[index] = Float(tone * fade * 0.12)
-        }
-        return buffer
     }
 
     private func installRemoteCommands() {

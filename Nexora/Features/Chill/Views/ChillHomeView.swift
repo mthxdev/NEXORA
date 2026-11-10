@@ -7,6 +7,7 @@ struct ChillHomeView: View {
     @State private var durationMinutes = 10
     @State private var usesCustomDuration = false
     @AppStorage("chillSoundGuidanceEnabled") private var soundGuidanceEnabled = true
+    @AppStorage("chillSoundVolume") private var soundVolume = 0.25
 
     private let presetDurations = [5, 10, 15, 20]
     private let contentWidth: CGFloat = 560
@@ -28,6 +29,11 @@ struct ChillHomeView: View {
         .background(NexoraColors.groupedBackground.ignoresSafeArea())
         .navigationTitle("Chill")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NexoraSettingsToolbarButton()
+            }
+        }
     }
 
     private var introduction: some View {
@@ -179,13 +185,30 @@ struct ChillHomeView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Signaux respiratoires")
                         .font(NexoraTypography.headline)
-                    Text("Un son bref à chaque changement de phase.")
+                    Text("Un souffle sonore doux suit chaque cycle.")
                         .font(NexoraTypography.footnote)
                         .foregroundStyle(NexoraColors.secondaryLabel)
                 }
             }
             .tint(.teal)
             .padding(.vertical, 5)
+
+            if soundGuidanceEnabled {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Volume")
+                            .font(NexoraTypography.subheadline)
+                        Spacer()
+                        Text("\(Int(soundVolume * 100)) %")
+                            .font(NexoraTypography.caption.monospacedDigit())
+                            .foregroundStyle(NexoraColors.secondaryLabel)
+                    }
+                    Slider(value: $soundVolume, in: 0.05...1, step: 0.01)
+                        .tint(.teal)
+                        .accessibilityLabel("Volume du guidage sonore")
+                }
+                .padding(.top, 2)
+            }
         }
     }
 
@@ -194,7 +217,8 @@ struct ChillHomeView: View {
             ChillSessionView(
                 pattern: mode.pattern(customInhale: customInhale, customExhale: customExhale),
                 durationMinutes: durationMinutes,
-                soundGuidanceEnabled: soundGuidanceEnabled
+                soundGuidanceEnabled: soundGuidanceEnabled,
+                soundVolume: soundVolume
             )
         } label: {
             Label("Commencer", systemImage: "wind")

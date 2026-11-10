@@ -6,11 +6,12 @@ struct ChillSessionView: View {
     @StateObject private var controller: ChillSessionController
     @State private var showingAudioError = false
 
-    init(pattern: ChillBreathingPattern, durationMinutes: Int, soundGuidanceEnabled: Bool) {
+    init(pattern: ChillBreathingPattern, durationMinutes: Int, soundGuidanceEnabled: Bool, soundVolume: Double) {
         _controller = StateObject(wrappedValue: ChillSessionController(
             pattern: pattern,
             durationMinutes: durationMinutes,
-            soundGuidanceEnabled: soundGuidanceEnabled
+            soundGuidanceEnabled: soundGuidanceEnabled,
+            soundVolume: soundVolume
         ))
     }
 
@@ -106,8 +107,11 @@ struct ChillSessionView: View {
     }
 
     private func breathingCircle(size: CGFloat, timeline: ChillSessionTimeline) -> some View {
-        let progress = CGFloat(timeline.phaseProgress)
-        let scale = timeline.phase == .inhale ? 0.56 + 0.44 * progress : 1.0 - 0.44 * progress
+        let diameter = CGFloat(ChillBreathingVisualMetrics.diameter(
+            maximum: Double(size),
+            phase: timeline.phase,
+            progress: timeline.phaseProgress
+        ))
         return ZStack {
             Circle()
                 .stroke(.white.opacity(0.16), lineWidth: 1)
@@ -118,16 +122,17 @@ struct ChillSessionView: View {
                         colors: [Color(red: 0.82, green: 0.95, blue: 0.88), Color(red: 0.38, green: 0.72, blue: 0.65)],
                         center: .center,
                         startRadius: 5,
-                        endRadius: size * 0.44
+                        endRadius: diameter / 2
                     )
                 )
                 .overlay(Circle().stroke(.white.opacity(0.46), lineWidth: 1))
-                .frame(width: size * 0.88, height: size * 0.88)
+                .frame(width: diameter, height: diameter)
                 .shadow(color: Color.teal.opacity(0.22), radius: 24)
-                .scaleEffect(scale)
-            Image(systemName: "wind")
-                .font(.system(size: size * 0.10, weight: .ultraLight))
-                .foregroundStyle(Color(red: 0.10, green: 0.27, blue: 0.26).opacity(0.72))
+            if diameter > 0 {
+                Image(systemName: "wind")
+                    .font(.system(size: max(8, min(44, diameter * 0.10)), weight: .ultraLight))
+                    .foregroundStyle(Color(red: 0.10, green: 0.27, blue: 0.26).opacity(0.72))
+            }
         }
         .frame(width: size, height: size)
         .accessibilityElement(children: .ignore)
@@ -233,7 +238,10 @@ struct ChillSessionView: View {
     }
 
     private func breathingDiameter(in size: CGSize) -> CGFloat {
-        max(180, min(420, min(size.width - 44, size.height * 0.48)))
+        CGFloat(ChillBreathingVisualMetrics.maximumDiameter(
+            availableWidth: Double(size.width),
+            availableHeight: Double(size.height)
+        ))
     }
 
     private func formatTime(_ seconds: Int) -> String {

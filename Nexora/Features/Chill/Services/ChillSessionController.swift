@@ -8,6 +8,7 @@ final class ChillSessionController: ObservableObject {
     @Published private(set) var pauseMessage: String?
 
     let soundGuidanceEnabled: Bool
+    let soundVolume: Double
     private let audioService: (any ChillCuePlaying)?
     private let clock: ContinuousClock
     private let origin: ContinuousClock.Instant
@@ -17,12 +18,14 @@ final class ChillSessionController: ObservableObject {
         pattern: ChillBreathingPattern,
         durationMinutes: Int,
         soundGuidanceEnabled: Bool,
+        soundVolume: Double = 0.25,
         audioService: (any ChillCuePlaying)? = nil
     ) {
         let clock = ContinuousClock()
         self.clock = clock
         self.origin = clock.now
         self.soundGuidanceEnabled = soundGuidanceEnabled
+        self.soundVolume = min(max(soundVolume.isFinite ? soundVolume : 0.25, 0.05), 1)
         if let audioService {
             self.audioService = audioService
         } else if soundGuidanceEnabled {
@@ -69,7 +72,11 @@ final class ChillSessionController: ObservableObject {
                 return
             }
             do {
-                try audioService.start(pattern: timeline.pattern, durationSeconds: timeline.durationSeconds)
+                try audioService.start(
+                    pattern: timeline.pattern,
+                    durationSeconds: timeline.durationSeconds,
+                    volume: soundVolume
+                )
             } catch {
                 audioService.stop()
                 audioError = error.localizedDescription
@@ -120,7 +127,7 @@ final class ChillSessionController: ObservableObject {
                 audioError = "Le service de guidage sonore est indisponible."
                 return
             }
-            do { try audioService.resume(after: timeline.elapsedSeconds) }
+            do { try audioService.resume(after: timeline.elapsedSeconds, volume: soundVolume) }
             catch {
                 audioError = error.localizedDescription
                 return

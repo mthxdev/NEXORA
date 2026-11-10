@@ -1,5 +1,28 @@
 import SwiftUI
 
+private struct OpenNexoraSettingsKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
+}
+
+extension EnvironmentValues {
+    var openNexoraSettings: () -> Void {
+        get { self[OpenNexoraSettingsKey.self] }
+        set { self[OpenNexoraSettingsKey.self] = newValue }
+    }
+}
+
+struct NexoraSettingsToolbarButton: View {
+    @Environment(\.openNexoraSettings) private var openSettings
+
+    var body: some View {
+        Button(action: openSettings) {
+            Label("Réglages", systemImage: "gearshape")
+        }
+        .labelStyle(.titleAndIcon)
+        .accessibilityLabel("Réglages")
+    }
+}
+
 enum AppTab: Hashable, CaseIterable {
     case home
     case muscuLog
@@ -10,6 +33,7 @@ enum AppTab: Hashable, CaseIterable {
 
 struct AppCoordinator: View {
     @State private var selectedTab: AppTab = .home
+    @State private var showingSettings = false
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -47,6 +71,11 @@ struct AppCoordinator: View {
 
         }
         .tint(.accentColor)
+        .environment(\.openNexoraSettings) { showingSettings = true }
+        .sheet(isPresented: $showingSettings) {
+            NexoraSettingsView()
+                .presentationDetents([.large])
+        }
     }
 }
 
@@ -54,6 +83,11 @@ struct MuscuLogTabView: View {
     var body: some View {
         NavigationStack {
             MuscuLogContentView()
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NexoraSettingsToolbarButton()
+                    }
+                }
         }
     }
 }
@@ -62,6 +96,11 @@ struct LogBookTabView: View {
     var body: some View {
         NavigationStack {
             LogBookView()
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NexoraSettingsToolbarButton()
+                    }
+                }
         }
     }
 }
