@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,11 +16,24 @@ jobs:
 
       - name: Select Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
-          xcodebuild -version
+          xcode_path=/Applications/Xcode_16.4.app/Contents/Developer
+          if [ ! -d "$xcode_path" ]; then
+            echo "Xcode 16.4 was not found at $xcode_path" >&2
+            exit 1
+          fi
+          sudo xcode-select --switch "$xcode_path"
+          xcodebuild -version | tee xcode-version.txt
+          grep -q '^Xcode 16\.4$' xcode-version.txt
 
       - name: Install XcodeGen
         run: brew install xcodegen
+
+      - name: Generate approved app icon renditions
+        run: |
+          python3 -m venv .venv-icon-tools
+          . .venv-icon-tools/bin/activate
+          python -m pip install --disable-pip-version-check Pillow
+          python Tools/generate_alternate_icons.py --preview icon-proof/Comparison.png
 
       - name: Generate Xcode project
         run: xcodegen generate
@@ -30,6 +43,47 @@ jobs:
           # Force the project objectVersion back to 56 (Xcode 15 compatible)
           # to bypass the format 77 error without triggering Xcode 16's actool bug.
           sed -i '' -E 's/objectVersion = [0-9]+;/objectVersion = 56;/g' Nexora.xcodeproj/project.pbxproj
+
+      - name: Install and select iOS 18.5 simulator
+        run: |
+          xcrun simctl list runtimes | tee simulator-runtimes.txt
+          if ! grep -q 'iOS 18\.5' simulator-runtimes.txt; then
+            xcodebuild -downloadPlatform iOS -buildVersion 18.5
+          fi
+          xcrun simctl list runtimes | tee simulator-runtimes-after-install.txt
+          grep -q 'iOS 18\.5' simulator-runtimes-after-install.txt
+          xcrun simctl list devices available --json > available-devices.json
+          python3 - <<'PY'
+          import json
+          import os
+
+          with open("available-devices.json", encoding="utf-8") as source:
+              runtimes = json.load(source)
+          candidates = [
+              device
+              for runtime, devices in runtimes.get("devices", {}).items()
+              if "iOS-18-5" in runtime
+              for device in devices
+              if device.get("isAvailable") and device.get("name", "").startswith("iPhone")
+          ]
+          if not candidates:
+              raise SystemExit("No available iPhone simulator was found for the installed iOS 18.5 runtime")
+          selected = candidates[0]
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as environment:
+              environment.write(f"SIMULATOR_ID={selected['udid']}\n")
+          print(f"Selected iOS 18.5 simulator: {selected['name']} ({selected['udid']})")
+          PY
+
+      - name: Test icon selection behavior
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Nexora.xcodeproj \
+            -scheme Nexora \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -parallel-testing-enabled NO \
+            -only-testing:NexoraIconTests \
+            -derivedDataPath build 2>&1 | tee tests.log
 
       - name: Clean build directory
         run: rm -rf build
@@ -55,7 +109,9 @@ jobs:
         if: failure()
         run: |
           echo "=== FULL BUILD LOG ==="
-          cat build.log
+          if [ -f build.log ]; then cat build.log; fi
+          echo "=== FULL TEST LOG ==="
+          if [ -f tests.log ]; then cat tests.log; fi
           echo ""
           echo "=== ANNOTATING ERRORS ==="
           grep -iE 'error:' build.log | head -100 | while IFS= read -r line; do
@@ -64,17 +120,32 @@ jobs:
 
       - name: Package IPA
         run: |
+          app_path=build/Build/Products/Release-iphoneos/Nexora.app
+          test -d "$app_path"
+          test -f "$app_path/Info.plist"
           mkdir -p Payload
-          cp -r build/Build/Products/Release-iphoneos/Nexora.app Payload/
-          zip -r Nexora.ipa Payload/
+          cp -R "$app_path" Payload/
+          zip -qr Nexora.ipa Payload
+          test -s Nexora.ipa
+          unzip -t Nexora.ipa
+          python3 -c 'import sys, zipfile; z=zipfile.ZipFile(sys.argv[1]); names=z.namelist(); assert "Payload/Nexora.app/Info.plist" in names, "IPA is missing Payload/Nexora.app/Info.plist"' Nexora.ipa
 
       - name: Verify icon in built app
         run: |
-          python3 Tools/verify_ipa_icon.py Nexora.ipa Payload/Nexora.app
+          python3 Tools/verify_ipa_icon.py Nexora.ipa Payload/Nexora.app \
+            --catalog Nexora/Resources/Assets.xcassets \
+            --proof-dir icon-proof
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: Nexora-ipa
           path: Nexora.ipa
+          retention-days: 90
+
+      - name: Upload icon verification proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexora-icon-proof
+          path: icon-proof/
           retention-days: 90

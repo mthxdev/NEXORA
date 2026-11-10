@@ -1,9 +1,11 @@
 import SwiftUI
 import UIKit
 
+@MainActor
 struct NexoraSettingsView: View {
     @AppStorage("appearance") private var appearance: AppAppearance = .system
-    @AppStorage("appLogo") private var appLogo: AppLogo = .classic
+    @StateObject private var iconSelection = AppIconSelectionModel()
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showingAbout = false
     #if DIAGNOSTIC
     @State private var showingDebugExport = false
@@ -30,7 +32,15 @@ struct NexoraSettingsView: View {
             .navigationTitle("Réglages")
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingAbout) {
-                AboutView(selectedLogo: appLogo)
+                AboutView(selectedLogo: iconSelection.selectedLogo)
+            }
+            .alert("Changement d’icône impossible", isPresented: Binding(
+                get: { iconSelection.errorMessage != nil },
+                set: { if !$0 { iconSelection.clearError() } }
+            )) {
+                Button("OK", role: .cancel) { iconSelection.clearError() }
+            } message: {
+                Text(iconSelection.errorMessage ?? "")
             }
             #if DIAGNOSTIC
             .sheet(isPresented: $showingDebugExport) {
@@ -43,24 +53,12 @@ struct NexoraSettingsView: View {
             }
             #endif
         }
-        .onChange(of: appLogo) { _, newLogo in
-            applyAlternateIcon(newLogo)
+        .onAppear {
+            iconSelection.refreshFromSystem()
         }
-    }
-    
-    private func applyAlternateIcon(_ logo: AppLogo) {
-        let iconName: String?
-        switch logo {
-        case .classic: iconName = nil  // nil = primary icon
-        case .gradient: iconName = "AppIcon-Gradient"
-        case .minimal: iconName = "AppIcon-Minimal"
-        case .bold: iconName = "AppIcon-Bold"
-        case .mono: iconName = "AppIcon-Mono"
-        }
-        
-        UIApplication.shared.setAlternateIconName(iconName) { error in
-            if let error = error {
-                print("Failed to set alternate icon: \(error)")
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                iconSelection.refreshFromSystem()
             }
         }
     }
@@ -83,17 +81,41 @@ struct NexoraSettingsView: View {
     
     private var logoSection: some View {
         Section {
-            Picker("Logo de l'application", selection: $appLogo) {
+            Picker("Icône de l’application", selection: Binding<AppLogo?>(
+                get: { iconSelection.selectedLogo },
+                set: { logo in
+                    guard let logo else { return }
+                    Task { await iconSelection.select(logo) }
+                }
+            )) {
                 ForEach(AppLogo.allCases, id: \.self) { logo in
-                    Label(logo.displayName, systemImage: "app.fill")
-                        .tag(logo)
+                    HStack(spacing: NexoraSpacing.sm) {
+                        AppIconPreview(logo: logo, size: 30)
+                        Text(logo.displayName)
+                    }
+                        .tag(Optional(logo))
                 }
             }
             .pickerStyle(.menu)
+            .disabled(iconSelection.isApplying || !iconSelection.supportsAlternateIcons)
+            if iconSelection.selectedLogo == nil {
+                Text("L’icône système active ne correspond à aucune option connue.")
+                    .font(.footnote)
+                    .foregroundStyle(NexoraColors.secondaryLabel)
+                Button("Revenir à l’icône principale") {
+                    Task { await iconSelection.select(.classic) }
+                }
+                .disabled(iconSelection.isApplying || !iconSelection.supportsAlternateIcons)
+            }
+            if !iconSelection.supportsAlternateIcons {
+                Text("Le changement d’icône n’est pas pris en charge dans cet environnement.")
+                    .font(.footnote)
+                    .foregroundStyle(NexoraColors.secondaryLabel)
+            }
         } header: {
             Text("Logo")
         } footer: {
-            Text("Le logo sélectionné s'affiche dans l'application et dans À propos.")
+            Text("L’icône active est synchronisée avec iOS. iOS peut afficher une confirmation lors du changement.")
         }
     }
     
@@ -186,19 +208,37 @@ private var aboutSection: some View {
     }
 }
 
+private struct AppIconPreview: View {
+    let logo: AppLogo
+    let size: CGFloat
+    var accessibilityLabel: String? = nil
+
+    var body: some View {
+        icon
+            .accessibilityLabel(accessibilityLabel ?? logo.displayName)
+            .accessibilityHidden(accessibilityLabel == nil)
+    }
+
+    private var icon: some View {
+        Image(logo.assetName)
+            .resizable()
+            .scaledToFill()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+    }
+}
+
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
-    let selectedLogo: AppLogo
+    let selectedLogo: AppLogo?
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: NexoraSpacing.lg) {
-                    Image(selectedLogo.assetName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 72, height: 72)
-                        .accessibilityLabel("Logo Nexora")
+                    if let selectedLogo {
+                        AppIconPreview(logo: selectedLogo, size: 72, accessibilityLabel: "Logo Nexora")
+                    }
                     
                     VStack(spacing: NexoraSpacing.xs) {
                         Text("Nexora")
