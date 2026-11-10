@@ -19,15 +19,19 @@ targets:
         excludes:
           - Features/Chill/Resources/*.m4a
           - Features/Chill/Resources/*.md
+      - path: Nexora/Features/Chill/Resources/chill_rain.m4a
+        buildPhase: resources
+      - path: Nexora/Features/Chill/Resources/chill_fire.m4a
+        buildPhase: resources
+      - path: Nexora/Features/Chill/Resources/chill_ocean.m4a
+        buildPhase: resources
+      - path: Nexora/Features/Chill/Resources/chill_forest.m4a
+        buildPhase: resources
+      - path: Nexora/Features/Chill/Resources/chill_night.m4a
+        buildPhase: resources
     # Ne PAS déclarer Assets.xcassets dans `resources` : il est déjà compilé
     # par le target via `sources`. Le déclarer deux fois dupliquait Assets.car
     # et pouvait faire échouer actool.
-    resources:
-      - Nexora/Features/Chill/Resources/chill_rain.m4a
-      - Nexora/Features/Chill/Resources/chill_fire.m4a
-      - Nexora/Features/Chill/Resources/chill_ocean.m4a
-      - Nexora/Features/Chill/Resources/chill_forest.m4a
-      - Nexora/Features/Chill/Resources/chill_night.m4a
     info:
       path: BuildSupport/Nexora-Info.plist
       properties:
