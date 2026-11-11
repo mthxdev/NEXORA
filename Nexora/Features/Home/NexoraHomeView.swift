@@ -9,7 +9,7 @@ struct NexoraHomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: NexoraSpacing.lg) {
+                VStack(spacing: NexoraSpacing.md) {
                     headerSection
                     
                     if let lastWorkout = completedWorkouts.first(where: { $0.finishedAt != nil }) {
@@ -22,14 +22,14 @@ struct NexoraHomeView: View {
                     
                     modulesSection
                     
-                    Spacer(minLength: NexoraSpacing.xl)
                 }
                 .padding(.horizontal, NexoraSpacing.md)
                 .padding(.top, NexoraSpacing.sm)
             }
+            .contentMargins(.bottom, NexoraSpacing.md, for: .scrollContent)
             .background(NexoraColors.groupedBackground)
             .navigationTitle("Nexora")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NexoraSettingsToolbarButton()
@@ -39,22 +39,24 @@ struct NexoraHomeView: View {
     }
     
     private var headerSection: some View {
-        VStack(spacing: NexoraSpacing.sm) {
+        HStack(spacing: NexoraSpacing.md) {
             Image(appLogo.assetName)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 48, height: 48)
-            
-            Text("Bienvenue dans Nexora")
-                .font(NexoraTypography.title1)
-                .multilineTextAlignment(.center)
-            
-            Text("Votre espace personnel unifié pour le sport, la culture et l'organisation.")
-                .font(NexoraTypography.body)
-                .foregroundStyle(NexoraColors.secondaryLabel)
-                .multilineTextAlignment(.center)
+                .frame(width: 44, height: 44)
+
+            VStack(alignment: .leading, spacing: NexoraSpacing.xs) {
+                Text("Bienvenue")
+                    .font(NexoraTypography.title3)
+
+                Text("Votre espace personnel unifié pour le sport, la culture et l'organisation.")
+                    .font(NexoraTypography.subheadline)
+                    .foregroundStyle(NexoraColors.secondaryLabel)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.vertical, NexoraSpacing.md)
+        .padding(.vertical, NexoraSpacing.sm)
     }
     
     private func lastWorkoutCard(_ workout: CompletedWorkout) -> some View {
