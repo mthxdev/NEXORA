@@ -11,6 +11,7 @@ struct NexoraHomeView: View {
             GeometryReader { viewport in
                 ScrollView {
                     VStack(spacing: 0) {
+                        diagnosticBuildBanner
                         headerSection
 
                         if let lastWorkout = completedWorkouts.first(where: { $0.finishedAt != nil }) {
@@ -41,6 +42,17 @@ struct NexoraHomeView: View {
                 }
             }
         }
+    }
+
+    private var diagnosticBuildBanner: some View {
+        Text("DIAGNOSTIC BUILD 16")
+            .font(.headline.weight(.bold))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, NexoraSpacing.sm)
+            .background(Color.red)
+            .clipShape(RoundedRectangle(cornerRadius: NexoraRadius.sm))
+            .accessibilityIdentifier("diagnostic-build-16")
     }
     
     private var headerSection: some View {
