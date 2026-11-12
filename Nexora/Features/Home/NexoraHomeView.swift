@@ -8,26 +8,31 @@ struct NexoraHomeView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: NexoraSpacing.md) {
-                    headerSection
-                    
-                    if let lastWorkout = completedWorkouts.first(where: { $0.finishedAt != nil }) {
-                        lastWorkoutCard(lastWorkout)
+            GeometryReader { viewport in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        headerSection
+
+                        if let lastWorkout = completedWorkouts.first(where: { $0.finishedAt != nil }) {
+                            Spacer(minLength: NexoraSpacing.sm)
+                            lastWorkoutCard(lastWorkout)
+                        }
+
+                        if !programs.isEmpty {
+                            Spacer(minLength: NexoraSpacing.sm)
+                            programsSection
+                        }
+
+                        Spacer(minLength: NexoraSpacing.sm)
+                        modulesSection
                     }
-                    
-                    if !programs.isEmpty {
-                        programsSection
-                    }
-                    
-                    modulesSection
-                    
+                    .padding(.horizontal, NexoraSpacing.md)
+                    .padding(.top, NexoraSpacing.xs)
+                    .padding(.bottom, NexoraSpacing.sm)
+                    .frame(minHeight: viewport.size.height, alignment: .top)
                 }
-                .padding(.horizontal, NexoraSpacing.md)
-                .padding(.top, NexoraSpacing.sm)
+                .background(NexoraColors.groupedBackground)
             }
-            .contentMargins(.bottom, NexoraSpacing.md, for: .scrollContent)
-            .background(NexoraColors.groupedBackground)
             .navigationTitle("Nexora")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -89,11 +94,11 @@ struct NexoraHomeView: View {
             }
             .foregroundStyle(NexoraColors.tertiaryLabel)
         }
-        .cardStyle()
+        .cardStyle(padding: NexoraSpacing.sm)
     }
     
     private var programsSection: some View {
-        VStack(alignment: .leading, spacing: NexoraSpacing.md) {
+        VStack(alignment: .leading, spacing: NexoraSpacing.sm) {
             Text("Vos programmes")
                 .font(NexoraTypography.headline)
             
@@ -116,11 +121,13 @@ struct NexoraHomeView: View {
     }
     
     private var modulesSection: some View {
-        VStack(alignment: .leading, spacing: NexoraSpacing.md) {
+        VStack(alignment: .leading, spacing: 0) {
             Text("Modules")
                 .font(NexoraTypography.headline)
-            
-            VStack(spacing: NexoraSpacing.md) {
+
+            Spacer(minLength: NexoraSpacing.sm)
+
+            VStack(spacing: 0) {
                 NavigationLink(destination: MuscuLogTabView()) {
                     ModuleCard(
                         icon: "dumbbell.fill",
@@ -132,7 +139,9 @@ struct NexoraHomeView: View {
                 }
                 .accessibilityLabel("Ouvrir MuscuLog — \(muscuLogStats)")
                 .buttonStyle(.plain)
-                
+
+                Spacer(minLength: NexoraSpacing.sm)
+
                  NavigationLink(destination: LogBookView()) {
                     ModuleCard(
                         icon: "book.fill",
@@ -144,6 +153,8 @@ struct NexoraHomeView: View {
                 }
                 .accessibilityLabel("Ouvrir LogBook")
                 .buttonStyle(.plain)
+
+                Spacer(minLength: NexoraSpacing.sm)
 
                 NavigationLink(destination: MealTabView()) {
                     ModuleCard(
@@ -158,6 +169,7 @@ struct NexoraHomeView: View {
                 .buttonStyle(.plain)
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
     
     private var muscuLogStats: String {
@@ -241,7 +253,7 @@ struct ModuleCard: View {
             ZStack {
                 RoundedRectangle(cornerRadius: NexoraRadius.md)
                     .fill(color.opacity(0.15))
-                    .frame(width: 56, height: 56)
+                    .frame(width: 48, height: 48)
                 
                 Image(systemName: icon)
                     .font(.system(size: 24, weight: .medium))
@@ -266,7 +278,7 @@ struct ModuleCard: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(NexoraColors.tertiaryLabel)
         }
-        .padding(NexoraSpacing.md)
+        .padding(NexoraSpacing.sm)
         .background(NexoraColors.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: NexoraRadius.md))
     }
