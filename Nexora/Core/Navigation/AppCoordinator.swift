@@ -76,6 +76,7 @@ struct AppCoordinator: View {
             NexoraSettingsView()
                 .presentationDetents([.large])
         }
+        .runtimeLayoutDiagnostics("AppCoordinator TabView")
     }
 }
 

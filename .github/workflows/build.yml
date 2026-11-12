@@ -100,6 +100,15 @@ jobs:
           xcrun simctl io "$SIMULATOR_ID" screenshot Nexora-home-preview.png
           test -s Nexora-home-preview.png
 
+      - name: Collect runtime layout measurements
+        run: |
+          xcrun simctl spawn "$SIMULATOR_ID" log show \
+            --last 5m \
+            --style compact \
+            --predicate 'process == "Nexora" AND eventMessage CONTAINS "[RuntimeLayout]"' \
+            | tee runtime-layout.log
+          grep -F '[RuntimeLayout]' runtime-layout.log
+
       - name: Clean build directory
         run: rm -rf build
 
@@ -171,3 +180,11 @@ jobs:
           name: Nexora-home-preview
           path: Nexora-home-preview.png
           retention-days: 90
+
+      - name: Upload runtime layout measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexora-runtime-layout-diagnostics
+          path: runtime-layout.log
+          retention-days: 30

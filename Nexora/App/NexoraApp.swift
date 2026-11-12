@@ -14,6 +14,7 @@ struct NexoraApp: App {
         WindowGroup {
             AppCoordinator()
                 .preferredColorScheme(appearance.colorScheme)
+                .runtimeLayoutDiagnostics("WindowGroup root")
         }
         .modelContainer(for: [
             Program.self,
