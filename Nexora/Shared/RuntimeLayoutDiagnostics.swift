@@ -101,7 +101,9 @@ private struct RuntimeWindowProbe: UIViewRepresentable {
         func reportIfChanged() {
             guard let window else { return }
 
-            let sceneBounds = window.windowScene?.coordinateSpace.bounds.description ?? "nil"
+            let sceneBounds = window.windowScene.map {
+                String(describing: $0.coordinateSpace.bounds)
+            } ?? "nil"
             let message = "[RuntimeLayout] UIKit \(location): UIScreen.main.bounds=\(UIScreen.main.bounds), " +
                 "window.screen.bounds=\(window.screen.bounds), " +
                 "windowScene.coordinateSpace.bounds=\(sceneBounds), " +
