@@ -26,7 +26,7 @@ struct NexoraHomeView: View {
                 .padding(.top, NexoraSpacing.sm)
                 .padding(.bottom, NexoraSpacing.sm)
             }
-            .background(NexoraColors.groupedBackground)
+            .background(NexoraColors.groupedBackground.ignoresSafeArea())
             .navigationTitle("Nexora")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
