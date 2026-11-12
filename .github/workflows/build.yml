@@ -86,6 +86,20 @@ jobs:
             -only-testing:NexoraChillTests \
             -derivedDataPath build 2>&1 | tee tests.log
 
+      - name: Launch Home in iOS Simulator and capture screenshot
+        run: |
+          app_path=build/Build/Products/Debug-iphonesimulator/Nexora.app
+          test -d "$app_path"
+          if ! xcrun simctl list devices available | grep -F "$SIMULATOR_ID" | grep -q '(Booted)'; then
+            xcrun simctl boot "$SIMULATOR_ID"
+          fi
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+          xcrun simctl install "$SIMULATOR_ID" "$app_path"
+          xcrun simctl launch "$SIMULATOR_ID" com.mathieu.musculog
+          sleep 5
+          xcrun simctl io "$SIMULATOR_ID" screenshot Nexora-home-preview.png
+          test -s Nexora-home-preview.png
+
       - name: Clean build directory
         run: rm -rf build
 
@@ -149,4 +163,11 @@ jobs:
         with:
           name: Nexora-icon-proof
           path: icon-proof/
+          retention-days: 90
+
+      - name: Upload Home simulator preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexora-home-preview
+          path: Nexora-home-preview.png
           retention-days: 90

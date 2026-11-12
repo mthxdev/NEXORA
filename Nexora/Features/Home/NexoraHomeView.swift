@@ -8,32 +8,25 @@ struct NexoraHomeView: View {
     
     var body: some View {
         NavigationStack {
-            GeometryReader { viewport in
-                ScrollView {
-                    VStack(spacing: 0) {
-                        diagnosticBuildBanner
-                        headerSection
+            ScrollView {
+                VStack(alignment: .leading, spacing: NexoraSpacing.sm) {
+                    headerSection
 
-                        if let lastWorkout = completedWorkouts.first(where: { $0.finishedAt != nil }) {
-                            Spacer(minLength: NexoraSpacing.sm)
-                            lastWorkoutCard(lastWorkout)
-                        }
-
-                        if !programs.isEmpty {
-                            Spacer(minLength: NexoraSpacing.sm)
-                            programsSection
-                        }
-
-                        Spacer(minLength: NexoraSpacing.sm)
-                        modulesSection
+                    if let lastWorkout = completedWorkouts.first(where: { $0.finishedAt != nil }) {
+                        lastWorkoutCard(lastWorkout)
                     }
-                    .padding(.horizontal, NexoraSpacing.md)
-                    .padding(.top, NexoraSpacing.xs)
-                    .padding(.bottom, NexoraSpacing.sm)
-                    .frame(minHeight: viewport.size.height, alignment: .top)
+
+                    if !programs.isEmpty {
+                        programsSection
+                    }
+
+                    modulesSection
                 }
-                .background(NexoraColors.groupedBackground)
+                .padding(.horizontal, NexoraSpacing.md)
+                .padding(.top, NexoraSpacing.sm)
+                .padding(.bottom, NexoraSpacing.sm)
             }
+            .background(NexoraColors.groupedBackground)
             .navigationTitle("Nexora")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -44,17 +37,6 @@ struct NexoraHomeView: View {
         }
     }
 
-    private var diagnosticBuildBanner: some View {
-        Text("DIAGNOSTIC BUILD 16")
-            .font(.headline.weight(.bold))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, NexoraSpacing.sm)
-            .background(Color.red)
-            .clipShape(RoundedRectangle(cornerRadius: NexoraRadius.sm))
-            .accessibilityIdentifier("diagnostic-build-16")
-    }
-    
     private var headerSection: some View {
         HStack(spacing: NexoraSpacing.md) {
             Image(appLogo.assetName)
@@ -133,13 +115,11 @@ struct NexoraHomeView: View {
     }
     
     private var modulesSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: NexoraSpacing.sm) {
             Text("Modules")
                 .font(NexoraTypography.headline)
 
-            Spacer(minLength: NexoraSpacing.sm)
-
-            VStack(spacing: 0) {
+            VStack(spacing: NexoraSpacing.sm) {
                 NavigationLink(destination: MuscuLogTabView()) {
                     ModuleCard(
                         icon: "dumbbell.fill",
@@ -152,9 +132,7 @@ struct NexoraHomeView: View {
                 .accessibilityLabel("Ouvrir MuscuLog — \(muscuLogStats)")
                 .buttonStyle(.plain)
 
-                Spacer(minLength: NexoraSpacing.sm)
-
-                 NavigationLink(destination: LogBookView()) {
+                NavigationLink(destination: LogBookView()) {
                     ModuleCard(
                         icon: "book.fill",
                         title: "LogBook",
@@ -165,8 +143,6 @@ struct NexoraHomeView: View {
                 }
                 .accessibilityLabel("Ouvrir LogBook")
                 .buttonStyle(.plain)
-
-                Spacer(minLength: NexoraSpacing.sm)
 
                 NavigationLink(destination: MealTabView()) {
                     ModuleCard(
@@ -181,7 +157,6 @@ struct NexoraHomeView: View {
                 .buttonStyle(.plain)
             }
         }
-        .frame(maxHeight: .infinity, alignment: .top)
     }
     
     private var muscuLogStats: String {
