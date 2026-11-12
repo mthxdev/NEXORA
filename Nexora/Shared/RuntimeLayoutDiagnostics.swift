@@ -51,7 +51,8 @@ extension View {
 
 private enum RuntimeLayoutDiagnosticsLogger {
     static func logSwiftUI(location: String, size: CGSize, safeAreaInsets: EdgeInsets) {
-        let message = "[RuntimeLayout] SwiftUI \(location): size=\(size), safeAreaInsets=\(safeAreaInsets)"
+        let launchScreen = String(describing: Bundle.main.infoDictionary?["UILaunchScreen"] ?? "<absent>")
+        let message = "[RuntimeLayout] SwiftUI \(location): size=\(size), safeAreaInsets=\(safeAreaInsets), UILaunchScreen=\(launchScreen)"
         NSLog("%@", message)
     }
 }
