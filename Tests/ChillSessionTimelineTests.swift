@@ -182,22 +182,44 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertEqual(ChillBreathingVisualMetrics.maximumDiameter(availableWidth: 40, availableHeight: 100), 0, accuracy: 0.001)
     }
 
-    func testBreathingAudioEnvelopeIsQuietSmoothAndFollowsCustomPhases() {
+    func testBreathingCueSamplesAreShortDistinctAndTapered() {
+        let sound = ChillBreathingCueSound()
+        let inhale = sound.samples(for: .inhale)
+        let exhale = sound.samples(for: .exhale)
+        let inhalePeak = inhale.map { abs($0) }.max() ?? 0
+        let exhalePeak = exhale.map { abs($0) }.max() ?? 0
+
+        XCTAssertEqual(inhale.count, Int(ChillBreathingCueSound.sampleRate * ChillBreathingCueSound.durationSeconds))
+        XCTAssertNotEqual(inhale, exhale)
+        XCTAssertEqual(inhale.first ?? 1, 0, accuracy: 0.000001)
+        XCTAssertEqual(inhale.last ?? 1, 0, accuracy: 0.000001)
+        XCTAssertGreaterThan(inhalePeak, 0.04)
+        XCTAssertLessThan(inhalePeak, 0.08)
+        XCTAssertEqual(exhalePeak, inhalePeak, accuracy: 0.02)
+    }
+
+    func testBreathingCuePlaybackIsPhaseSynchronizedAndSilentBetweenCues() {
         let pattern = ChillBreathingPattern(inhaleSeconds: 4, exhaleSeconds: 6)
-        XCTAssertEqual(ChillBreathingAudioEnvelope.position(at: 2, pattern: pattern), .init(phase: .inhale, progress: 0.5))
-        XCTAssertEqual(ChillBreathingAudioEnvelope.position(at: 7, pattern: pattern), .init(phase: .exhale, progress: 0.5))
-        XCTAssertLessThan(ChillBreathingAudioEnvelope.frequency(at: 1, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 3, pattern: pattern))
-        XCTAssertGreaterThan(ChillBreathingAudioEnvelope.frequency(at: 5, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 9, pattern: pattern))
-        XCTAssertGreaterThanOrEqual(ChillBreathingAudioEnvelope.frequency(at: 0, pattern: pattern), 174)
-        XCTAssertLessThanOrEqual(ChillBreathingAudioEnvelope.frequency(at: 0, pattern: pattern), 220)
-        XCTAssertEqual(ChillBreathingAudioEnvelope.frequency(at: 4, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 4.0001, pattern: pattern), accuracy: 0.01)
-        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0, volume: 0.8), 0, accuracy: 0.000001)
-        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 1, volume: 0.8), 0, accuracy: 0.000001)
-        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0.5, volume: 0.8), 0.032, accuracy: 0.000001)
-        XCTAssertLessThan(ChillBreathingAudioEnvelope.amplitude(progress: 0.99, volume: 0.8), 0.0001)
-        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0.5, volume: 0), 0, accuracy: 0.000001)
-        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: .nan, volume: 1), 0)
-        XCTAssertLessThanOrEqual(abs(ChillBreathingAudioEnvelope.sample(at: 2.5, pattern: pattern, volume: 1)), 0.04)
+        let sound = ChillBreathingCueSound()
+        func output(at elapsed: TimeInterval, sessionStart: TimeInterval = 0, volume: Double = 1) -> Float {
+            sound.sample(
+                at: elapsed,
+                sessionStartElapsed: sessionStart,
+                pattern: pattern,
+                volume: volume
+            )
+        }
+
+        XCTAssertNotEqual(output(at: 0.01), 0)
+        XCTAssertEqual(output(at: 0.30), 0)
+        XCTAssertNotEqual(output(at: 4.01), 0)
+        XCTAssertEqual(output(at: 7), 0)
+        XCTAssertNotEqual(output(at: 10.01), 0)
+        XCTAssertEqual(output(at: 0.11, sessionStart: 0.10), 0)
+        XCTAssertNotEqual(output(at: 4.01, sessionStart: 0.10), 0)
+        XCTAssertEqual(output(at: 4.11, sessionStart: 4.10), 0)
+        XCTAssertNotEqual(output(at: 10.01, sessionStart: 4.10), 0)
+        XCTAssertEqual(output(at: 0.01, volume: 0.5), output(at: 0.01) * 0.5, accuracy: 0.000001)
     }
 
     @MainActor

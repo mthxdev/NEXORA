@@ -185,7 +185,7 @@ struct ChillHomeView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Signaux respiratoires")
                         .font(NexoraTypography.headline)
-                    Text("Un souffle sonore doux suit chaque cycle.")
+                    Text("Deux repères doux marquent l’inspiration et l’expiration.")
                         .font(NexoraTypography.footnote)
                         .foregroundStyle(NexoraColors.secondaryLabel)
                 }

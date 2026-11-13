@@ -40,6 +40,7 @@ final class ChillAudioService: ChillCuePlaying {
 
     private let session = AVAudioSession.sharedInstance()
     private var engine: AVAudioEngine?
+    private let cueSound = ChillBreathingCueSound()
     private var observers: [NSObjectProtocol] = []
     private var commandTargets: [(MPRemoteCommand, Any)] = []
     private var previousCommandStates: [(MPRemoteCommand, Bool)] = []
@@ -142,6 +143,7 @@ final class ChillAudioService: ChillCuePlaying {
             let baseElapsed = max(0, elapsedSeconds ?? 0)
             let renderPattern = pattern
             let renderVolume = volume
+            let cueSound = self.cueSound
             var renderedFrameCount: Int64 = 0
             let sourceNode = AVAudioSourceNode(format: format) { _, _, frameCount, audioBufferList in
                 let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
@@ -151,8 +153,9 @@ final class ChillAudioService: ChillCuePlaying {
 
                 for frame in 0..<Int(frameCount) {
                     let elapsed = baseElapsed + Double(renderedFrameCount + Int64(frame)) / sampleRate
-                    audioData[frame] = ChillBreathingAudioEnvelope.sample(
+                    audioData[frame] = cueSound.sample(
                         at: elapsed,
+                        sessionStartElapsed: baseElapsed,
                         pattern: renderPattern,
                         volume: renderVolume
                     )
