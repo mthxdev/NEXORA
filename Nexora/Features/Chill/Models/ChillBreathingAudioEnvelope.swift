@@ -32,15 +32,15 @@ enum ChillBreathingAudioEnvelope {
         let safeVolume = min(max(volume, 0), 1)
         let breathProgress = sin(.pi * phaseProgress)
         let breathEnvelope = breathProgress * breathProgress
-        return 0.065 * safeVolume * breathEnvelope
+        return 0.04 * safeVolume * breathEnvelope
     }
 
     static func frequency(at elapsedSeconds: TimeInterval, pattern: ChillBreathingPattern) -> Double {
         let position = position(at: elapsedSeconds, pattern: pattern)
         let progress = min(max(position.progress, 0), 1)
         let eased = progress * progress * (3 - 2 * progress)
-        let startFrequency = position.phase == .inhale ? 330.0 : 440.0
-        let endFrequency = position.phase == .inhale ? 440.0 : 330.0
+        let startFrequency = position.phase == .inhale ? 174.0 : 220.0
+        let endFrequency = position.phase == .inhale ? 220.0 : 174.0
         return startFrequency + (endFrequency - startFrequency) * eased
     }
 
@@ -53,19 +53,19 @@ enum ChillBreathingAudioEnvelope {
         let inhaleCycles = integratedCycles(
             progress: position.phase == .inhale ? position.progress : 1,
             duration: TimeInterval(pattern.inhaleSeconds),
-            startFrequency: 330,
-            endFrequency: 440
+            startFrequency: 174,
+            endFrequency: 220
         )
         let exhaleCycles = integratedCycles(
             progress: position.phase == .exhale ? position.progress : 0,
             duration: TimeInterval(pattern.exhaleSeconds),
-            startFrequency: 440,
-            endFrequency: 330
+            startFrequency: 220,
+            endFrequency: 174
         )
-        let cyclesPerFullCycle = TimeInterval(pattern.inhaleSeconds + pattern.exhaleSeconds) * 385
+        let cyclesPerFullCycle = TimeInterval(pattern.inhaleSeconds + pattern.exhaleSeconds) * 197
         let cycles = cycleNumber * cyclesPerFullCycle + inhaleCycles + exhaleCycles
         let tonePhase = 2 * .pi * cycles
-        let softTone = 0.90 * sin(tonePhase) + 0.10 * sin(tonePhase * 2)
+        let softTone = sin(tonePhase)
         return Float(level * softTone)
     }
 

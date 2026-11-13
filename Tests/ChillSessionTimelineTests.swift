@@ -188,14 +188,16 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertEqual(ChillBreathingAudioEnvelope.position(at: 7, pattern: pattern), .init(phase: .exhale, progress: 0.5))
         XCTAssertLessThan(ChillBreathingAudioEnvelope.frequency(at: 1, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 3, pattern: pattern))
         XCTAssertGreaterThan(ChillBreathingAudioEnvelope.frequency(at: 5, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 9, pattern: pattern))
+        XCTAssertGreaterThanOrEqual(ChillBreathingAudioEnvelope.frequency(at: 0, pattern: pattern), 174)
+        XCTAssertLessThanOrEqual(ChillBreathingAudioEnvelope.frequency(at: 0, pattern: pattern), 220)
         XCTAssertEqual(ChillBreathingAudioEnvelope.frequency(at: 4, pattern: pattern), ChillBreathingAudioEnvelope.frequency(at: 4.0001, pattern: pattern), accuracy: 0.01)
         XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0, volume: 0.8), 0, accuracy: 0.000001)
         XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 1, volume: 0.8), 0, accuracy: 0.000001)
-        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0.5, volume: 0.8), 0.052, accuracy: 0.000001)
+        XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0.5, volume: 0.8), 0.032, accuracy: 0.000001)
         XCTAssertLessThan(ChillBreathingAudioEnvelope.amplitude(progress: 0.99, volume: 0.8), 0.0001)
         XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: 0.5, volume: 0), 0, accuracy: 0.000001)
         XCTAssertEqual(ChillBreathingAudioEnvelope.amplitude(progress: .nan, volume: 1), 0)
-        XCTAssertLessThanOrEqual(abs(ChillBreathingAudioEnvelope.sample(at: 2.5, pattern: pattern, volume: 1)), 0.065)
+        XCTAssertLessThanOrEqual(abs(ChillBreathingAudioEnvelope.sample(at: 2.5, pattern: pattern, volume: 1)), 0.04)
     }
 
     @MainActor
