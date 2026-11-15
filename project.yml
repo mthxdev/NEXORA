@@ -16,6 +16,9 @@ targets:
     platform: iOS
     sources:
       - path: Nexora
+        excludes:
+          - Features/Chill/Resources/chill_inspiration.wav
+          - Features/Chill/Resources/chill_expiration.wav
     # Ne PAS déclarer Assets.xcassets dans `resources` : il est déjà compilé
     # par le target via `sources`. Le déclarer deux fois dupliquait Assets.car
     # et pouvait faire échouer actool.
@@ -87,3 +90,26 @@ schemes:
       targets:
         - NexoraIconTests
         - NexoraChillTests
+  ChillAudioDiagnostics:
+    type: application
+    platform: iOS
+    sources:
+      - path: Diagnostics/ChillAudioDiagnostics
+    resources:
+      - path: Nexora/Features/Chill/Resources/chill_inspiration.wav
+      - path: Nexora/Features/Chill/Resources/chill_expiration.wav
+    frameworks:
+      - System: AVFoundation
+      - System: AudioToolbox
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mathieu.chill-audio-diagnostics
+        PRODUCT_NAME: ChillAudioDiagnostics
+        SWIFT_VERSION: "5.10"
+        SWIFT_OBJC_BRIDGING_HEADER: Diagnostics/ChillAudioDiagnostics/ProbeCaptureRing.h
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+  ChillAudioDiagnostics:
+    build:
+      targets:
+        ChillAudioDiagnostics: all

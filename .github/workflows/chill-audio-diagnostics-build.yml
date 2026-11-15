@@ -1,0 +1,60 @@
+name: ChillAudioDiagnostics build
+
+on:
+  push:
+    branches:
+      - 'codex/chill-audio-diagnostics-build'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16.4 if installed
+        run: |
+          xcode_path=/Applications/Xcode_16.4.app/Contents/Developer
+          if [ -d "$xcode_path" ]; then
+            sudo xcode-select --switch "$xcode_path"
+          fi
+          xcodebuild -version | tee xcode-version.txt
+
+      - name: Install XcodeGen
+        run: |
+          set -o pipefail
+          brew install xcodegen
+          xcodegen --version | tee xcodegen-version.txt
+
+      - name: Generate Xcode project
+        run: |
+          set -o pipefail
+          xcodegen generate 2>&1 | tee xcodegen.log
+
+      - name: Build diagnostic app only
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Nexora.xcodeproj \
+            -scheme ChillAudioDiagnostics \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath build 2>&1 | tee xcodebuild.log
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChillAudioDiagnostics-build-logs
+          path: |
+            xcode-version.txt
+            xcodegen-version.txt
+            xcodegen.log
+            xcodebuild.log
+          if-no-files-found: warn
+          retention-days: 14
