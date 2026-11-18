@@ -196,7 +196,7 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertEqual(inhale.first ?? 1, 0, accuracy: 0.000001)
         XCTAssertLessThan(abs(inhale.last ?? 1), 0.0001)
         XCTAssertGreaterThan(inhalePeak, 0.15)
-        XCTAssertLessThanOrEqual(inhalePeak, ChillBreathingCueSound.peakLevel)
+        XCTAssertLessThanOrEqual(inhalePeak, Float(ChillBreathingCueSound.peakLevel))
         XCTAssertEqual(exhalePeak, inhalePeak, accuracy: 0.02)
     }
 
