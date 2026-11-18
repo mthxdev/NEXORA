@@ -5,25 +5,22 @@ enum ChillBreathingCue: Equatable {
     case exhale
 }
 
-// Fixed-pitch, softly struck notes: D4 marks inhale and A3 marks exhale.
-// A short eased attack and tapered decay keep each original cue click-free.
-// Samples are generated once and only emitted at breathing-phase boundaries.
-
+// Warm prototype: soft fundamental with restrained second–fourth harmonics.
+// Raised-cosine phase edges avoid clicks and follow the selected breathing pattern.
 final class ChillBreathingCueSound {
     static let sampleRate = 44_100.0
-    static let durationSeconds = 0.26
+    static let peakLevel = 0.22
+    private let partials: [(ratio: Double, level: Double, phase: Double)] = [
+        (2, 0.31, 0.10),
+        (3, 0.12, 0.23),
+        (4, 0.03, 0.37)
+    ]
+    private var inhaleSamples: [Float] = []
+    private var exhaleSamples: [Float] = []
 
-    private static let peakLevel = 0.055
-    private static let attackSeconds = 0.008
-    private static let tailStartSeconds = 0.20
-    private static let tailSeconds = durationSeconds - tailStartSeconds
-
-    private let inhaleSamples: [Float]
-    private let exhaleSamples: [Float]
-
-    init() {
-        inhaleSamples = Self.makeSamples(frequency: 293.66)
-        exhaleSamples = Self.makeSamples(frequency: 220.0)
+    func prepare(for pattern: ChillBreathingPattern) {
+        inhaleSamples = makeSamples(durationSeconds: Double(pattern.inhaleSeconds))
+        exhaleSamples = makeSamples(durationSeconds: Double(pattern.exhaleSeconds))
     }
 
     func samples(for cue: ChillBreathingCue) -> [Float] {
@@ -46,49 +43,41 @@ final class ChillBreathingCueSound {
         let cycleLength = TimeInterval(pattern.cycleSeconds)
         let cyclePosition = elapsedSeconds.truncatingRemainder(dividingBy: cycleLength)
         let cycleStart = elapsedSeconds - cyclePosition
-        let cueStart: TimeInterval
-        let cueAge: TimeInterval
-        let isInhale: Bool
+        let inhaleDuration = TimeInterval(pattern.inhaleSeconds)
+        let isInhale = cyclePosition < inhaleDuration
+        let cueStart = isInhale ? cycleStart : cycleStart + inhaleDuration
+        let cueAge = isInhale ? cyclePosition : cyclePosition - inhaleDuration
+        let samples = isInhale ? inhaleSamples : exhaleSamples
 
-        if cyclePosition < TimeInterval(pattern.inhaleSeconds) {
-            cueStart = cycleStart
-            cueAge = cyclePosition
-            isInhale = true
-        } else {
-            cueStart = cycleStart + TimeInterval(pattern.inhaleSeconds)
-            cueAge = cyclePosition - TimeInterval(pattern.inhaleSeconds)
-            isInhale = false
-        }
-
-        guard cueStart >= sessionStartElapsed, cueAge >= 0,
-              cueAge < Self.durationSeconds else { return 0 }
+        guard cueStart >= sessionStartElapsed, cueAge >= 0 else { return 0 }
         let frame = Int(cueAge * Self.sampleRate)
+        guard samples.indices.contains(frame) else { return 0 }
         let safeVolume = Float(min(max(volume, 0), 1))
-        if isInhale, inhaleSamples.indices.contains(frame) {
-            return inhaleSamples[frame] * safeVolume
-        }
-        if !isInhale, exhaleSamples.indices.contains(frame) {
-            return exhaleSamples[frame] * safeVolume
-        }
-        return 0
+        return samples[frame] * safeVolume
     }
 
-    private static func makeSamples(frequency: Double) -> [Float] {
-        let frameCount = Int(sampleRate * durationSeconds)
+    private func makeSamples(durationSeconds: TimeInterval) -> [Float] {
+        let frameCount = Int(Self.sampleRate * durationSeconds)
+        let fadeInSeconds = min(0.9, durationSeconds / 3)
+        let fadeOutSeconds = min(1.1, durationSeconds / 3)
+        let fadeOutStart = durationSeconds - fadeOutSeconds
+        let conservativePeakBound = 1 + partials.reduce(0) { $0 + $1.level }
+
         return (0..<frameCount).map { frame in
-            guard frame < frameCount - 1 else { return 0 }
-            let time = Double(frame) / sampleRate
-            let attack = time < attackSeconds
-                ? 0.5 - 0.5 * cos(.pi * time / attackSeconds)
-                : 1
-            let decay = exp(-time / 0.11)
-            let tail = time > tailStartSeconds
-                ? 0.5 + 0.5 * cos(.pi * (time - tailStartSeconds) / tailSeconds)
-                : 1
-            let fundamental = sin(2 * .pi * frequency * time)
-            let secondPartial = 0.18 * sin(2 * .pi * frequency * 2 * time + 0.18)
-            let thirdPartial = 0.04 * sin(2 * .pi * frequency * 3 * time + 0.35)
-            return Float(peakLevel * attack * decay * tail * (fundamental + secondPartial + thirdPartial))
+            let time = Double(frame) / Self.sampleRate
+            let envelope: Double
+            if time < fadeInSeconds {
+                envelope = 0.5 - 0.5 * cos(.pi * time / fadeInSeconds)
+            } else if time > fadeOutStart {
+                envelope = 0.5 + 0.5 * cos(.pi * (time - fadeOutStart) / fadeOutSeconds)
+            } else {
+                envelope = 1
+            }
+            let fundamental = sin(2 * .pi * 174.61 * time)
+            let harmonics = partials.reduce(0.0) { sum, partial in
+                sum + partial.level * sin(2 * .pi * 174.61 * partial.ratio * time + partial.phase)
+            }
+            return Float((Self.peakLevel / conservativePeakBound) * envelope * (fundamental + harmonics))
         }
     }
 }

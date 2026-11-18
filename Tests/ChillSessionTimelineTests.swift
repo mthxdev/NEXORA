@@ -182,25 +182,28 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertEqual(ChillBreathingVisualMetrics.maximumDiameter(availableWidth: 40, availableHeight: 100), 0, accuracy: 0.001)
     }
 
-    func testBreathingCueSamplesAreShortDistinctAndTapered() {
+    func testWarmBreathingSamplesCoverEachPhaseWithoutClipping() {
         let sound = ChillBreathingCueSound()
+        sound.prepare(for: .coherence)
         let inhale = sound.samples(for: .inhale)
         let exhale = sound.samples(for: .exhale)
         let inhalePeak = inhale.map { abs($0) }.max() ?? 0
         let exhalePeak = exhale.map { abs($0) }.max() ?? 0
 
-        XCTAssertEqual(inhale.count, Int(ChillBreathingCueSound.sampleRate * ChillBreathingCueSound.durationSeconds))
-        XCTAssertNotEqual(inhale, exhale)
+        XCTAssertEqual(inhale.count, Int(ChillBreathingCueSound.sampleRate * 5))
+        XCTAssertEqual(exhale.count, inhale.count)
+        XCTAssertEqual(inhale, exhale)
         XCTAssertEqual(inhale.first ?? 1, 0, accuracy: 0.000001)
-        XCTAssertEqual(inhale.last ?? 1, 0, accuracy: 0.000001)
-        XCTAssertGreaterThan(inhalePeak, 0.04)
-        XCTAssertLessThan(inhalePeak, 0.08)
+        XCTAssertLessThan(abs(inhale.last ?? 1), 0.0001)
+        XCTAssertGreaterThan(inhalePeak, 0.15)
+        XCTAssertLessThanOrEqual(inhalePeak, ChillBreathingCueSound.peakLevel)
         XCTAssertEqual(exhalePeak, inhalePeak, accuracy: 0.02)
     }
 
-    func testBreathingCuePlaybackIsPhaseSynchronizedAndSilentBetweenCues() {
+    func testBreathingSoundFollowsFullPhaseAndSilencesBeforeSessionStart() {
         let pattern = ChillBreathingPattern(inhaleSeconds: 4, exhaleSeconds: 6)
         let sound = ChillBreathingCueSound()
+        sound.prepare(for: pattern)
         func output(at elapsed: TimeInterval, sessionStart: TimeInterval = 0, volume: Double = 1) -> Float {
             sound.sample(
                 at: elapsed,
@@ -210,16 +213,16 @@ final class ChillSessionTimelineTests: XCTestCase {
             )
         }
 
-        XCTAssertNotEqual(output(at: 0.01), 0)
-        XCTAssertEqual(output(at: 0.30), 0)
-        XCTAssertNotEqual(output(at: 4.01), 0)
-        XCTAssertEqual(output(at: 7), 0)
-        XCTAssertNotEqual(output(at: 10.01), 0)
+        XCTAssertNotEqual(output(at: 0.3), 0)
+        XCTAssertNotEqual(output(at: 3.0), 0)
+        XCTAssertNotEqual(output(at: 4.3), 0)
+        XCTAssertNotEqual(output(at: 7), 0)
+        XCTAssertNotEqual(output(at: 10.3), 0)
         XCTAssertEqual(output(at: 0.11, sessionStart: 0.10), 0)
-        XCTAssertNotEqual(output(at: 4.01, sessionStart: 0.10), 0)
+        XCTAssertNotEqual(output(at: 4.3, sessionStart: 0.10), 0)
         XCTAssertEqual(output(at: 4.11, sessionStart: 4.10), 0)
-        XCTAssertNotEqual(output(at: 10.01, sessionStart: 4.10), 0)
-        XCTAssertEqual(output(at: 0.01, volume: 0.5), output(at: 0.01) * 0.5, accuracy: 0.000001)
+        XCTAssertNotEqual(output(at: 10.3, sessionStart: 4.10), 0)
+        XCTAssertEqual(output(at: 0.3, volume: 0.5), output(at: 0.3) * 0.5, accuracy: 0.000001)
     }
 
     @MainActor

@@ -89,6 +89,7 @@ final class ChillAudioService: ChillCuePlaying {
         self.pattern = pattern
         self.durationSeconds = durationSeconds
         self.volume = min(max(volume.isFinite ? volume : 0.25, 0.05), 1)
+        cueSound.prepare(for: pattern)
         isSessionPaused = false
         try startEngine(schedulingAfter: nil)
         installRemoteCommands()
@@ -166,6 +167,7 @@ final class ChillAudioService: ChillCuePlaying {
 
             nextEngine.attach(sourceNode)
             nextEngine.connect(sourceNode, to: nextEngine.mainMixerNode, format: format)
+            nextEngine.mainMixerNode.outputVolume = 1
 
             nextEngine.prepare()
             try nextEngine.start()
