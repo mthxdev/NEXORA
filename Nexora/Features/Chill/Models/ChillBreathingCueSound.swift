@@ -64,8 +64,8 @@ final class ChillBreathingCueSound {
         let frameCount = Int(Self.sampleRate * durationSeconds)
         let frequency = cue == .inhale ? 196.0 : 174.61
         let partials = cue == .inhale ? inhalePartials : exhalePartials
-        let fadeOutSeconds = min(1.0, durationSeconds)
-        let fadeOutStart = durationSeconds - fadeOutSeconds
+        let fadeOutStart = durationSeconds > 1 ? 1.0 : 0.0
+        let fadeOutSeconds = durationSeconds - fadeOutStart
         let conservativePeakBound = 1 + partials.reduce(0) { $0 + $1.level }
 
         return (0..<frameCount).map { frame in

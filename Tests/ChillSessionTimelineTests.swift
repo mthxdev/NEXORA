@@ -203,22 +203,39 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertLessThanOrEqual(exhalePeak, Float(ChillBreathingCueSound.peakLevel))
     }
 
-    func testBreathingEnvelopeIsSteadyUntilTheFinalSecond() {
+    func testFiveSecondBreathingEnvelopeStaysSteadyForOneSecondThenFadesForFour() {
         let sound = ChillBreathingCueSound()
-        sound.prepare(for: ChillBreathingPattern(inhaleSeconds: 4, exhaleSeconds: 6))
+        sound.prepare(for: .coherence)
         let samples = sound.samples(for: .inhale)
         let rate = ChillBreathingCueSound.sampleRate
-        let earlyWindow = samples[Int(rate * 0.5)..<Int(rate * 0.75)]
-        let middleWindow = samples[Int(rate * 2.0)..<Int(rate * 2.25)]
-        let plateauRMS = { (values: ArraySlice<Float>) -> Double in
-            sqrt(values.reduce(0.0) { $0 + Double($1 * $1) } / Double(values.count))
+        func rms(from start: Double, to end: Double) -> Double {
+            let window = samples[Int(rate * start)..<Int(rate * end)]
+            return sqrt(window.reduce(0.0) { $0 + Double($1 * $1) } / Double(window.count))
         }
-        let plateauPeak = samples[Int(rate * 1.0)..<Int(rate * 2.0)].map { abs($0) }.max() ?? 0
-        let finalTenthPeak = samples[Int(rate * 3.9)..<Int(rate * 4.0)].map { abs($0) }.max() ?? 0
 
-        XCTAssertEqual(plateauRMS(earlyWindow), plateauRMS(middleWindow), accuracy: 0.0001)
-        XCTAssertGreaterThan(plateauPeak, 0.15)
-        XCTAssertLessThan(finalTenthPeak, plateauPeak * 0.05)
+        XCTAssertEqual(rms(from: 0.25, to: 0.5), rms(from: 0.5, to: 0.75), accuracy: 0.0001)
+        let fadeLevels = (1..<5).map { second in
+            rms(from: Double(second), to: Double(second + 1))
+        }
+        XCTAssertGreaterThan(fadeLevels[0], fadeLevels[1])
+        XCTAssertGreaterThan(fadeLevels[1], fadeLevels[2])
+        XCTAssertGreaterThan(fadeLevels[2], fadeLevels[3])
+        XCTAssertLessThan(fadeLevels[3], rms(from: 0.1, to: 0.9) * 0.05)
+    }
+
+    func testTwoSecondBreathingPhaseKeepsOneSecondThenFadesAndEndsAtSilence() {
+        let sound = ChillBreathingCueSound()
+        sound.prepare(for: ChillBreathingPattern(inhaleSeconds: 2, exhaleSeconds: 2))
+        let samples = sound.samples(for: .inhale)
+        let rate = ChillBreathingCueSound.sampleRate
+        func rms(from start: Double, to end: Double) -> Double {
+            let window = samples[Int(rate * start)..<Int(rate * end)]
+            return sqrt(window.reduce(0.0) { $0 + Double($1 * $1) } / Double(window.count))
+        }
+
+        XCTAssertEqual(rms(from: 0.25, to: 0.5), rms(from: 0.5, to: 0.75), accuracy: 0.0001)
+        XCTAssertGreaterThan(rms(from: 1.1, to: 1.5), rms(from: 1.5, to: 1.9))
+        XCTAssertLessThan(abs(samples.last ?? 1), 0.0001)
     }
 
     func testBreathingSoundFollowsFullPhaseAndSilencesBeforeSessionStart() {
