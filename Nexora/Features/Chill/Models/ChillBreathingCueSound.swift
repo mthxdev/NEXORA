@@ -5,22 +5,19 @@ enum ChillBreathingCue: Equatable {
     case exhale
 }
 
-// Warm prototype: soft fundamental with restrained second–fourth harmonics.
-// Raised-cosine phase edges avoid clicks and follow the selected breathing pattern.
+// A rounded two-partial waveform avoids the buzzy character of the Warm prototype.
+// A one-second raised-cosine release keeps the level steady for the rest of the phase.
 final class ChillBreathingCueSound {
     static let sampleRate = 44_100.0
-    static let peakLevel = 0.22
-    private let partials: [(ratio: Double, level: Double, phase: Double)] = [
-        (2, 0.31, 0.10),
-        (3, 0.12, 0.23),
-        (4, 0.03, 0.37)
-    ]
+    static let peakLevel = 0.28
+    private let inhalePartials: [(ratio: Double, level: Double)] = [(2, 0.18), (3, 0.035)]
+    private let exhalePartials: [(ratio: Double, level: Double)] = [(2, 0.10), (3, 0.02)]
     private var inhaleSamples: [Float] = []
     private var exhaleSamples: [Float] = []
 
     func prepare(for pattern: ChillBreathingPattern) {
-        inhaleSamples = makeSamples(durationSeconds: Double(pattern.inhaleSeconds))
-        exhaleSamples = makeSamples(durationSeconds: Double(pattern.exhaleSeconds))
+        inhaleSamples = makeSamples(cue: .inhale, durationSeconds: Double(pattern.inhaleSeconds))
+        exhaleSamples = makeSamples(cue: .exhale, durationSeconds: Double(pattern.exhaleSeconds))
     }
 
     func samples(for cue: ChillBreathingCue) -> [Float] {
@@ -50,32 +47,40 @@ final class ChillBreathingCueSound {
         let samples = isInhale ? inhaleSamples : exhaleSamples
 
         guard cueStart >= sessionStartElapsed, cueAge >= 0 else { return 0 }
-        let frame = Int(cueAge * Self.sampleRate)
+        let framePosition = cueAge * Self.sampleRate
+        let frame = Int(framePosition)
         guard samples.indices.contains(frame) else { return 0 }
+        let fraction = Float(framePosition - Double(frame))
+        let sample = if samples.indices.contains(frame + 1) {
+            samples[frame] + (samples[frame + 1] - samples[frame]) * fraction
+        } else {
+            samples[frame]
+        }
         let safeVolume = Float(min(max(volume, 0), 1))
-        return samples[frame] * safeVolume
+        return sample * safeVolume
     }
 
-    private func makeSamples(durationSeconds: TimeInterval) -> [Float] {
+    private func makeSamples(cue: ChillBreathingCue, durationSeconds: TimeInterval) -> [Float] {
         let frameCount = Int(Self.sampleRate * durationSeconds)
-        let fadeInSeconds = min(0.9, durationSeconds / 3)
-        let fadeOutSeconds = min(1.1, durationSeconds / 3)
+        let frequency = cue == .inhale ? 196.0 : 174.61
+        let partials = cue == .inhale ? inhalePartials : exhalePartials
+        let fadeOutSeconds = min(1.0, durationSeconds)
         let fadeOutStart = durationSeconds - fadeOutSeconds
         let conservativePeakBound = 1 + partials.reduce(0) { $0 + $1.level }
 
         return (0..<frameCount).map { frame in
             let time = Double(frame) / Self.sampleRate
             let envelope: Double
-            if time < fadeInSeconds {
-                envelope = 0.5 - 0.5 * cos(.pi * time / fadeInSeconds)
-            } else if time > fadeOutStart {
-                envelope = 0.5 + 0.5 * cos(.pi * (time - fadeOutStart) / fadeOutSeconds)
-            } else {
+            if time <= fadeOutStart {
                 envelope = 1
+            } else {
+                let progress = min(1, (time - fadeOutStart) / fadeOutSeconds)
+                envelope = 0.5 + 0.5 * cos(.pi * progress)
             }
-            let fundamental = sin(2 * .pi * 174.61 * time)
+            let phase = 2 * .pi * frequency * time
+            let fundamental = sin(phase)
             let harmonics = partials.reduce(0.0) { sum, partial in
-                sum + partial.level * sin(2 * .pi * 174.61 * partial.ratio * time + partial.phase)
+                sum + partial.level * sin(phase * partial.ratio)
             }
             return Float((Self.peakLevel / conservativePeakBound) * envelope * (fundamental + harmonics))
         }
