@@ -189,6 +189,15 @@ final class ChillSessionTimelineTests: XCTestCase {
         let exhale = sound.samples(for: .exhale)
         let inhalePeak = inhale.map { abs($0) }.max() ?? 0
         let exhalePeak = exhale.map { abs($0) }.max() ?? 0
+        let sampleRate = ChillBreathingCueSound.sampleRate
+        func positiveCrossings(_ samples: [Float], in range: Range<Int>) -> Int {
+            range.dropFirst().reduce(0) { count, index in
+                count + (samples[index - 1] <= 0 && samples[index] > 0 ? 1 : 0)
+            }
+        }
+        let referenceRange = Int(sampleRate)..<Int(sampleRate * 2)
+        let inhaleCrossings = positiveCrossings(inhale, in: referenceRange)
+        let exhaleCrossings = positiveCrossings(exhale, in: referenceRange)
 
         XCTAssertEqual(inhale.count, Int(ChillBreathingCueSound.sampleRate * 5))
         XCTAssertEqual(exhale.count, inhale.count)
@@ -201,24 +210,45 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertGreaterThan(exhalePeak, 0.15)
         XCTAssertLessThanOrEqual(inhalePeak, Float(ChillBreathingCueSound.peakLevel))
         XCTAssertLessThanOrEqual(exhalePeak, Float(ChillBreathingCueSound.peakLevel))
+        XCTAssertGreaterThan(inhaleCrossings, exhaleCrossings + 20)
     }
 
-    func testBreathingEnvelopeIsSteadyUntilTheFinalSecond() {
+    func testBreathingEnvelopeFadesOverLastTwentyPercentForConfiguredDurations() {
+        let sampleRate = ChillBreathingCueSound.sampleRate
+        let windowFrames = Int(sampleRate * 0.1)
+        let scenarios = [(2, 10), (4, 6), (10, 2)]
         let sound = ChillBreathingCueSound()
-        sound.prepare(for: ChillBreathingPattern(inhaleSeconds: 4, exhaleSeconds: 6))
-        let samples = sound.samples(for: .inhale)
-        let rate = ChillBreathingCueSound.sampleRate
-        let earlyWindow = samples[Int(rate * 0.5)..<Int(rate * 0.75)]
-        let middleWindow = samples[Int(rate * 2.0)..<Int(rate * 2.25)]
-        let plateauRMS = { (values: ArraySlice<Float>) -> Double in
-            sqrt(values.reduce(0.0) { $0 + Double($1 * $1) } / Double(values.count))
-        }
-        let plateauPeak = samples[Int(rate * 1.0)..<Int(rate * 2.0)].map { abs($0) }.max() ?? 0
-        let finalTenthPeak = samples[Int(rate * 3.9)..<Int(rate * 4.0)].map { abs($0) }.max() ?? 0
 
-        XCTAssertEqual(plateauRMS(earlyWindow), plateauRMS(middleWindow), accuracy: 0.0001)
-        XCTAssertGreaterThan(plateauPeak, 0.15)
-        XCTAssertLessThan(finalTenthPeak, plateauPeak * 0.05)
+        func rms(_ samples: ArraySlice<Float>) -> Double {
+            sqrt(samples.reduce(0.0) { $0 + Double($1 * $1) } / Double(samples.count))
+        }
+
+        for (inhaleSeconds, exhaleSeconds) in scenarios {
+            let pattern = ChillBreathingPattern(inhaleSeconds: inhaleSeconds, exhaleSeconds: exhaleSeconds)
+            sound.prepare(for: pattern)
+
+            for (cue, duration) in [
+                (ChillBreathingCue.inhale, inhaleSeconds),
+                (.exhale, exhaleSeconds)
+            ] {
+                let samples = sound.samples(for: cue)
+                let fadeStartFrame = Int(Double(duration) * 0.8 * sampleRate)
+                let steadyStartFrame = Int(Double(duration) * 0.5 * sampleRate)
+                let tailStartFrame = Int(Double(duration) * 0.99 * sampleRate)
+                let steadyRMS = rms(samples[steadyStartFrame..<(steadyStartFrame + windowFrames)])
+                let preFadeRMS = rms(samples[(fadeStartFrame - windowFrames)..<fadeStartFrame])
+                let firstFadeRMS = rms(samples[fadeStartFrame..<(fadeStartFrame + windowFrames)])
+                let tailRMS = rms(samples[tailStartFrame..<samples.count])
+                let peak = samples.map { abs($0) }.max() ?? 0
+                let edgeJump = abs(samples[fadeStartFrame] - samples[fadeStartFrame - 1])
+
+                XCTAssertEqual(preFadeRMS, steadyRMS, accuracy: 0.0001)
+                XCTAssertLessThan(firstFadeRMS, preFadeRMS)
+                XCTAssertLessThan(tailRMS, preFadeRMS * 0.02)
+                XCTAssertLessThanOrEqual(peak, Float(ChillBreathingCueSound.peakLevel))
+                XCTAssertLessThan(edgeJump, 0.015)
+            }
+        }
     }
 
     func testBreathingSoundFollowsFullPhaseAndSilencesBeforeSessionStart() {

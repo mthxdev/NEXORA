@@ -6,12 +6,12 @@ enum ChillBreathingCue: Equatable {
 }
 
 // A rounded two-partial waveform avoids the buzzy character of the Warm prototype.
-// A one-second raised-cosine release keeps the level steady for the rest of the phase.
+// A proportional raised-cosine release shortens the audible plateau without changing phase timing.
 final class ChillBreathingCueSound {
     static let sampleRate = 44_100.0
     static let peakLevel = 0.28
-    private let inhalePartials: [(ratio: Double, level: Double)] = [(2, 0.18), (3, 0.035)]
-    private let exhalePartials: [(ratio: Double, level: Double)] = [(2, 0.10), (3, 0.02)]
+    private let inhalePartials: [(ratio: Double, level: Double)] = [(2, 0.17), (3, 0.05)]
+    private let exhalePartials: [(ratio: Double, level: Double)] = [(2, 0.13), (3, 0.015)]
     private var inhaleSamples: [Float] = []
     private var exhaleSamples: [Float] = []
 
@@ -62,9 +62,9 @@ final class ChillBreathingCueSound {
 
     private func makeSamples(cue: ChillBreathingCue, durationSeconds: TimeInterval) -> [Float] {
         let frameCount = Int(Self.sampleRate * durationSeconds)
-        let frequency = cue == .inhale ? 196.0 : 174.61
+        let frequency = cue == .inhale ? 200.0 : 170.0
         let partials = cue == .inhale ? inhalePartials : exhalePartials
-        let fadeOutSeconds = min(1.0, durationSeconds)
+        let fadeOutSeconds = durationSeconds * 0.2
         let fadeOutStart = durationSeconds - fadeOutSeconds
         let conservativePeakBound = 1 + partials.reduce(0) { $0 + $1.level }
 
