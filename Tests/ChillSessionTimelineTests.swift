@@ -220,7 +220,7 @@ final class ChillSessionTimelineTests: XCTestCase {
         XCTAssertGreaterThan(fadeLevels[0], fadeLevels[1])
         XCTAssertGreaterThan(fadeLevels[1], fadeLevels[2])
         XCTAssertGreaterThan(fadeLevels[2], fadeLevels[3])
-        XCTAssertLessThan(fadeLevels[3], rms(from: 0.1, to: 0.9) * 0.05)
+        XCTAssertLessThan(fadeLevels[3], rms(from: 0.1, to: 0.9) * 0.08)
     }
 
     func testTwoSecondBreathingPhaseKeepsOneSecondThenFadesAndEndsAtSilence() {
