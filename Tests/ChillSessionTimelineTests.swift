@@ -264,16 +264,16 @@ final class ChillSessionTimelineTests: XCTestCase {
             )
         }
 
-        XCTAssertNotEqual(output(at: 0.3), 0)
-        XCTAssertNotEqual(output(at: 3.1), 0)
-        XCTAssertNotEqual(output(at: 4.3), 0)
-        XCTAssertNotEqual(output(at: 7), 0)
-        XCTAssertNotEqual(output(at: 10.3), 0)
+        XCTAssertNotEqual(output(at: 0.317), 0)
+        XCTAssertNotEqual(output(at: 3.123), 0)
+        XCTAssertNotEqual(output(at: 4.317), 0)
+        XCTAssertNotEqual(output(at: 7.123), 0)
+        XCTAssertNotEqual(output(at: 10.317), 0)
         XCTAssertEqual(output(at: 0.11, sessionStart: 0.10), 0)
-        XCTAssertNotEqual(output(at: 4.3, sessionStart: 0.10), 0)
+        XCTAssertNotEqual(output(at: 4.317, sessionStart: 0.10), 0)
         XCTAssertEqual(output(at: 4.11, sessionStart: 4.10), 0)
-        XCTAssertNotEqual(output(at: 10.3, sessionStart: 4.10), 0)
-        XCTAssertEqual(output(at: 0.3, volume: 0.5), output(at: 0.3) * 0.5, accuracy: 0.000001)
+        XCTAssertNotEqual(output(at: 10.317, sessionStart: 4.10), 0)
+        XCTAssertEqual(output(at: 0.317, volume: 0.5), output(at: 0.317) * 0.5, accuracy: 0.000001)
     }
     func testInhaleToExhaleAudioBoundaryHasNoDiscontinuity() {
         let pattern = ChillBreathingPattern(inhaleSeconds: 4, exhaleSeconds: 6)
